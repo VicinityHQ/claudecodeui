@@ -645,6 +645,22 @@ async function loadMcpConfig(cwd) {
 }
 
 /**
+ * Categorizes an error for mobile-friendly display
+ * Mobile users don't have DevTools, so errors need clear categories
+ * @param {Error} error - The error object
+ * @returns {string} Error category for UI display
+ */
+function categorizeError(error) {
+  const msg = error.message?.toLowerCase() || '';
+  if (msg.includes('timeout')) return 'timeout';
+  if (msg.includes('network') || msg.includes('econnrefused') || msg.includes('enotfound')) return 'network';
+  if (msg.includes('auth') || msg.includes('unauthorized') || msg.includes('forbidden')) return 'auth';
+  if (msg.includes('rate limit') || msg.includes('too many')) return 'rate_limit';
+  if (msg.includes('abort') || msg.includes('interrupt')) return 'aborted';
+  return 'sdk_error';
+}
+
+/**
  * Executes a Claude query using the SDK
  * @param {string} command - User prompt/command
  * @param {Object} options - Query options
@@ -849,11 +865,13 @@ async function queryClaudeSDK(command, options = {}, ws) {
       await cleanupSession(capturedSessionId);
     }
 
-    // Send error to WebSocket
+    // Send error to WebSocket with enhanced info for mobile debugging
     ws.send({
       type: 'claude-error',
-      error: error.message,
-      sessionId: capturedSessionId
+      error: error.message || 'An unknown error occurred',
+      sessionId: capturedSessionId,
+      timestamp: new Date().toISOString(),
+      category: categorizeError(error)
     });
 
     throw error;
