@@ -764,6 +764,7 @@ async function queryClaudeSDK(command, options = {}, ws) {
     // Track the query instance for abort capability
     if (capturedSessionId) {
       addSession(capturedSessionId, queryInstance, tempImagePaths, tempDir);
+      setupSessionTimeouts(capturedSessionId, activeSessions.get(capturedSessionId), ws);
     }
 
     // Process streaming messages
@@ -774,6 +775,8 @@ async function queryClaudeSDK(command, options = {}, ws) {
 
         capturedSessionId = message.session_id;
         addSession(capturedSessionId, queryInstance, tempImagePaths, tempDir);
+        setupSessionTimeouts(capturedSessionId, activeSessions.get(capturedSessionId), ws);
+        transitionSessionState(capturedSessionId, SessionStatus.ACTIVE);
 
         // Set session ID on writer
         if (ws.setSessionId && typeof ws.setSessionId === 'function') {
@@ -802,6 +805,11 @@ async function queryClaudeSDK(command, options = {}, ws) {
         sessionId: capturedSessionId
       });
 
+      // Reset inactivity timer on each SDK message
+      if (capturedSessionId) {
+        resetInactivityTimer(capturedSessionId);
+      }
+
       // Extract and send token budget updates from result messages
       if (message.type === 'result') {
         const tokenBudget = extractTokenBudget(message);
@@ -818,11 +826,9 @@ async function queryClaudeSDK(command, options = {}, ws) {
 
     // Clean up session on completion
     if (capturedSessionId) {
-      removeSession(capturedSessionId);
+      transitionSessionState(capturedSessionId, SessionStatus.COMPLETE);
+      await cleanupSession(capturedSessionId);
     }
-
-    // Clean up temporary image files
-    await cleanupTempFiles(tempImagePaths, tempDir);
 
     // Send completion event
     console.log('Streaming complete, sending claude-complete event');
@@ -839,11 +845,9 @@ async function queryClaudeSDK(command, options = {}, ws) {
 
     // Clean up session on error
     if (capturedSessionId) {
-      removeSession(capturedSessionId);
+      transitionSessionState(capturedSessionId, SessionStatus.ERROR);
+      await cleanupSession(capturedSessionId);
     }
-
-    // Clean up temporary image files on error
-    await cleanupTempFiles(tempImagePaths, tempDir);
 
     // Send error to WebSocket
     ws.send({
