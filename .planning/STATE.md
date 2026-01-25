@@ -61,6 +61,8 @@ Recent decisions affecting current work:
 | Display project.sessionCount and totalSizeBytes before sessions load | 02-02 | Users see project size at a glance before expanding |
 | Sessions from same file share the file's total size | 03-01 | Approximation acceptable for visibility goals |
 | Size only displays when sizeBytes > 0 | 03-01 | Handles undefined/null gracefully |
+| Queue messages during WebSocket disconnection | quick-001 | Prevents silent message drops, improves reliability |
+| Limit message queue to 100 messages | quick-001 | Prevents memory issues during extended disconnection |
 
 ### Pending Todos
 
@@ -72,7 +74,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-24T19:48:29Z
-Stopped at: Completed 03-01-PLAN.md (Phase 3 complete)
-Resume file: .planning/phases/03-ui-size-indicators/03-01-SUMMARY.md
-Next: All phases complete - project complete
+Last session: 2026-01-25T09:38:59Z
+Stopped at: Completed quick-001-PLAN.md (WebSocket message queuing)
+Resume file: .planning/quick/001-investigate-ui-backend-messaging/001-SUMMARY.md
+Next: All phases complete - quick tasks as needed
