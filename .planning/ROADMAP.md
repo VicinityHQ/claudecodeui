@@ -75,8 +75,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 04-01-PLAN.md - Session lifecycle infrastructure with status tracking and dual timeout mechanism
-- [ ] 04-02-PLAN.md - Integrate timeouts into SDK flow and enhance error messages
+- [x] 04-01-PLAN.md - Session lifecycle infrastructure with status tracking and dual timeout mechanism
+- [x] 04-02-PLAN.md - Integrate timeouts into SDK flow and enhance error messages
 
 #### Phase 5: Frontend State Management
 **Goal**: UI state clears cleanly when switching projects or starting new sessions
@@ -117,6 +117,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 1. File Reading Optimization | v1.0 | 3/3 | Complete | 2026-01-24 |
 | 2. Lazy Loading Architecture | v1.0 | 2/2 | Complete | 2026-01-24 |
 | 3. UI Size Indicators | v1.0 | 1/1 | Complete | 2026-01-24 |
-| 4. Backend Session Lifecycle | v1.1 | 0/2 | Planned | - |
+| 4. Backend Session Lifecycle | v1.1 | 2/2 | Complete | 2026-01-25 |
 | 5. Frontend State Management | v1.1 | 0/? | Not started | - |
 | 6. Error UX | v1.1 | 0/? | Not started | - |

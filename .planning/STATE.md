@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-01-25)
 
 ## Current Position
 
-Phase: 4 of 6 (Backend Session Lifecycle)
-Plan: 2 of 3 complete
-Status: In progress
-Last activity: 2026-01-25 — Completed 04-02-PLAN.md (SDK Integration)
+Phase: 4 of 6 (Backend Session Lifecycle) — COMPLETE
+Plan: All plans executed and verified
+Status: Phase complete
+Last activity: 2026-01-25 — Phase 4 executed and verified
 
-Progress: [█████░░░░░] 62% (8/13 total plans complete)
+Progress: [██████░░░░] 67% (4/6 phases complete)
 
 ## Previous Milestone: v1.0 Memory Optimization
 
@@ -26,12 +26,21 @@ Progress: [█████░░░░░] 62% (8/13 total plans complete)
 | 02-lazy-loading-architecture | 2/2 | Complete |
 | 03-ui-size-indicators | 1/1 | Complete |
 
+## Current Milestone: v1.1 Session Reliability
+
+**In Progress**
+
+| Phase | Plans | Status |
+|-------|-------|--------|
+| 04-backend-session-lifecycle | 2/2 | Complete |
+| 05-frontend-state-management | 0/? | Not started |
+| 06-error-ux | 0/? | Not started |
+
 ## Performance Metrics
 
 **Velocity:**
 - Total plans completed: 8 (6 v1.0 + 2 v1.1)
-- Average duration: N/A
-- Total execution time: N/A
+- Phase 4 duration: ~6 min (2 plans)
 
 **By Phase:**
 
@@ -41,12 +50,6 @@ Progress: [█████░░░░░] 62% (8/13 total plans complete)
 | 2 | 2 | N/A | N/A |
 | 3 | 1 | N/A | N/A |
 | 4 | 2 | ~6min | ~3min |
-
-**Recent Trend:**
-- Last 5 plans: N/A
-- Trend: N/A
-
-*Updated after each plan completion*
 
 ## Accumulated Context
 
@@ -70,15 +73,13 @@ Recent decisions affecting current work:
 
 From user report (2026-01-25):
 
-1. **Stuck sessions**: SDK streams messages (same session ID) but never completes. Server logs show repeated "No session_id in message or already captured" but no `claude-complete`. UI shows spinning counter indefinitely.
-
-2. **Message bleeding**: Switching to new project shows message from previous failed attempt. Frontend state not cleared on project switch.
-
-3. **Silent failures**: When sessions fail to start, no clear error feedback. User only sees counter running.
+1. **Stuck sessions**: ✓ ADDRESSED in Phase 4 — 60s inactivity timeout now triggers session failure with structured error
+2. **Message bleeding**: To be addressed in Phase 5 — Frontend state management
+3. **Silent failures**: ✓ PARTIALLY ADDRESSED in Phase 4 — Error categorization and timestamps added
 
 ### Blockers/Concerns
 
-- Primary usage is mobile (no DevTools access for debugging)
+- Primary usage is mobile (no DevTools access for debugging) — Error categorization added in Phase 4
 - sqlite3 native module has architecture compatibility issues on local dev (pre-existing, unrelated)
 
 ### Pending Todos
@@ -93,7 +94,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-25T21:14:00Z
-Stopped at: Completed 04-02-PLAN.md (SDK Integration)
-Resume file: None
-Next: Execute 04-03-PLAN.md (if exists) or Phase 05
+Last session: 2026-01-25T21:15:00Z
+Stopped at: Phase 4 complete
+Resume file: —
+Next: `/gsd:discuss-phase 5` or `/gsd:plan-phase 5`

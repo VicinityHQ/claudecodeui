@@ -9,10 +9,10 @@ Requirements for session reliability milestone.
 
 ### Session Lifecycle
 
-- [ ] **SESS-01**: Session ID captured reliably from SDK on first streaming message
-- [ ] **SESS-02**: Session status tracked through lifecycle (pending → active → complete/error)
-- [ ] **SESS-03**: Session completion detected when SDK async generator finishes
-- [ ] **SESS-04**: Stuck session timeout triggers after 60 seconds of no activity
+- [x] **SESS-01**: Session ID captured reliably from SDK on first streaming message
+- [x] **SESS-02**: Session status tracked through lifecycle (pending → active → complete/error)
+- [x] **SESS-03**: Session completion detected when SDK async generator finishes
+- [x] **SESS-04**: Stuck session timeout triggers after 60 seconds of no activity
 
 ### UI State Management
 
@@ -25,7 +25,7 @@ Requirements for session reliability milestone.
 ### Error Handling
 
 - [ ] **ERR-01**: Timeout displays clear error after 60 seconds of no SDK activity
-- [ ] **ERR-02**: SDK errors surface to UI with meaningful message
+- [x] **ERR-02**: SDK errors surface to UI with meaningful message
 - [ ] **ERR-03**: WebSocket disconnect shows reconnection status indicator
 
 ## v2 Requirements
@@ -51,11 +51,11 @@ Deferred to future milestone.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SESS-01 | Phase 4 | Pending |
-| SESS-02 | Phase 4 | Pending |
-| SESS-03 | Phase 4 | Pending |
-| SESS-04 | Phase 4 | Pending |
-| ERR-02 | Phase 4 | Pending |
+| SESS-01 | Phase 4 | Complete |
+| SESS-02 | Phase 4 | Complete |
+| SESS-03 | Phase 4 | Complete |
+| SESS-04 | Phase 4 | Complete |
+| ERR-02 | Phase 4 | Complete |
 | UI-01 | Phase 5 | Pending |
 | UI-02 | Phase 5 | Pending |
 | UI-03 | Phase 5 | Pending |
