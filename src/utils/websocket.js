@@ -5,128 +5,110 @@ export function useWebSocket() {
   const [messages, setMessages] = useState([]);
   const [isConnected, setIsConnected] = useState(false);
   const reconnectTimeoutRef = useRef(null);
-  const wsRef = useRef(null); // Track actual WebSocket instance for cleanup
-  const isMountedRef = useRef(true); // Track if component is still mounted
-  const connectionIdRef = useRef(0); // Track connection ID to ignore stale events
-
-  const connect = useCallback(() => {
-    // Don't connect if already connected
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      return;
-    }
-
-    // Increment connection ID to invalidate any pending events from old connections
-    const thisConnectionId = ++connectionIdRef.current;
-
-    try {
-      const isPlatform = import.meta.env.VITE_IS_PLATFORM === 'true';
-
-      // Construct WebSocket URL
-      let wsUrl;
-
-      if (isPlatform) {
-        // Platform mode: Use same domain as the page (goes through proxy)
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        wsUrl = `${protocol}//${window.location.host}/ws`;
-      } else {
-        // OSS mode: Connect to same host:port that served the page
-        const token = localStorage.getItem('auth-token');
-        if (!token) {
-          console.warn('No authentication token found for WebSocket connection');
-          return;
-        }
-
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        wsUrl = `${protocol}//${window.location.host}/ws?token=${encodeURIComponent(token)}`;
-      }
-
-      // Close any existing connection before creating a new one
-      if (wsRef.current) {
-        wsRef.current.close();
-        wsRef.current = null;
-      }
-
-      const websocket = new WebSocket(wsUrl);
-      wsRef.current = websocket;
-
-      websocket.onopen = () => {
-        // Ignore if this is a stale connection or component unmounted
-        if (thisConnectionId !== connectionIdRef.current || !isMountedRef.current) {
-          websocket.close();
-          return;
-        }
-        setIsConnected(true);
-        setWs(websocket);
-      };
-
-      websocket.onmessage = (event) => {
-        // Ignore if stale or unmounted
-        if (thisConnectionId !== connectionIdRef.current || !isMountedRef.current) return;
-        try {
-          const data = JSON.parse(event.data);
-          setMessages(prev => [...prev, data]);
-        } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
-        }
-      };
-
-      websocket.onclose = () => {
-        // Ignore events from stale connections - critical for React StrictMode
-        if (thisConnectionId !== connectionIdRef.current) return;
-        if (!isMountedRef.current) return;
-
-        setIsConnected(false);
-        setWs(null);
-        wsRef.current = null;
-
-        // Attempt to reconnect after 3 seconds if still mounted and still current
-        reconnectTimeoutRef.current = setTimeout(() => {
-          if (isMountedRef.current && thisConnectionId === connectionIdRef.current) {
-            connect();
-          }
-        }, 3000);
-      };
-
-      websocket.onerror = (error) => {
-        // Ignore errors from stale connections
-        if (thisConnectionId !== connectionIdRef.current) return;
-        console.error('WebSocket error:', error);
-      };
-
-    } catch (error) {
-      console.error('Error creating WebSocket connection:', error);
-    }
-  }, []);
+  const wsRef = useRef(null);
 
   useEffect(() => {
-    isMountedRef.current = true;
+    let mounted = true;
+    let websocket = null;
+
+    const connect = () => {
+      // Don't connect if already have an open connection
+      if (websocket && websocket.readyState === WebSocket.OPEN) {
+        return;
+      }
+
+      try {
+        const isPlatform = import.meta.env.VITE_IS_PLATFORM === 'true';
+        let wsUrl;
+
+        if (isPlatform) {
+          const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+          wsUrl = `${protocol}//${window.location.host}/ws`;
+        } else {
+          const token = localStorage.getItem('auth-token');
+          if (!token) {
+            console.warn('No authentication token found for WebSocket connection');
+            return;
+          }
+          const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+          wsUrl = `${protocol}//${window.location.host}/ws?token=${encodeURIComponent(token)}`;
+        }
+
+        websocket = new WebSocket(wsUrl);
+        wsRef.current = websocket;
+
+        websocket.onopen = () => {
+          if (!mounted) {
+            // Component unmounted while connecting - close silently
+            websocket.close();
+            return;
+          }
+          console.log('[WS] Connected');
+          setIsConnected(true);
+          setWs(websocket);
+        };
+
+        websocket.onmessage = (event) => {
+          if (!mounted) return;
+          try {
+            const data = JSON.parse(event.data);
+            setMessages(prev => [...prev, data]);
+          } catch (error) {
+            console.error('Error parsing WebSocket message:', error);
+          }
+        };
+
+        websocket.onclose = (event) => {
+          console.log('[WS] Disconnected, code:', event.code);
+          if (!mounted) return;
+
+          setIsConnected(false);
+          setWs(null);
+          wsRef.current = null;
+
+          // Reconnect after 3 seconds
+          reconnectTimeoutRef.current = setTimeout(() => {
+            if (mounted) {
+              console.log('[WS] Attempting reconnect...');
+              connect();
+            }
+          }, 3000);
+        };
+
+        websocket.onerror = (error) => {
+          console.error('[WS] Error:', error);
+        };
+
+      } catch (error) {
+        console.error('Error creating WebSocket connection:', error);
+      }
+    };
+
     connect();
 
     return () => {
-      isMountedRef.current = false;
-      // Increment connection ID to invalidate any pending events
-      connectionIdRef.current++;
+      mounted = false;
 
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
         reconnectTimeoutRef.current = null;
       }
 
-      // Close WebSocket using ref (not stale closure)
-      if (wsRef.current) {
-        wsRef.current.close();
-        wsRef.current = null;
+      if (websocket) {
+        websocket.close();
       }
     };
-  }, [connect]);
+  }, []);
 
-  const sendMessage = (message) => {
-    if (ws && isConnected) {
-      ws.send(JSON.stringify(message));
+  const sendMessage = useCallback((message) => {
+    const currentWs = wsRef.current;
+    if (currentWs && currentWs.readyState === WebSocket.OPEN) {
+      console.log('[WS] Sending:', message.type);
+      currentWs.send(JSON.stringify(message));
     } else {
-      console.warn('WebSocket not connected');
+      console.warn('[WS] Cannot send - not connected. readyState:', currentWs?.readyState);
     }
-  };
+  }, []);
 
   return {
     ws,

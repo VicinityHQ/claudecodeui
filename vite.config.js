@@ -13,14 +13,19 @@ export default defineConfig(({ command, mode }) => {
       host: '0.0.0.0',
       allowedHosts: true,
       proxy: {
-        '/api': `http://localhost:${env.PORT || 3001}`,
+        '/api': {
+          target: `http://localhost:${env.PORT || 3001}`,
+          changeOrigin: true
+        },
         '/ws': {
           target: `ws://localhost:${env.PORT || 3001}`,
-          ws: true
+          ws: true,
+          changeOrigin: true
         },
         '/shell': {
           target: `ws://localhost:${env.PORT || 3001}`,
-          ws: true
+          ws: true,
+          changeOrigin: true
         }
       }
     },
