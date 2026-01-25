@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-25)
 ## Current Position
 
 Phase: 4 of 6 (Backend Session Lifecycle)
-Plan: Ready to plan
-Status: Roadmap created
-Last activity: 2026-01-25 — Roadmap created for v1.1 Session Reliability
+Plan: 1 of 3 complete
+Status: In progress
+Last activity: 2026-01-25 — Completed 04-01-PLAN.md (Session Lifecycle Infrastructure)
 
-Progress: [███░░░░░░░] 50% (3/6 phases complete - v1.0 shipped)
+Progress: [████░░░░░░] 54% (7/13 total plans complete)
 
 ## Previous Milestone: v1.0 Memory Optimization
 
@@ -59,6 +59,9 @@ Recent decisions affecting current work:
 | Queue messages during WebSocket disconnect | quick-001 | Prevents silent message drops |
 | Detect completed sessions before resume | quick-001 | Prevents SDK replay causing token overflow |
 | SessionId on all WebSocket messages | quick-001 | Enables cross-session filtering |
+| Terminal state guard on session transitions | 04-01 | Prevents duplicate error messages |
+| No SDK abort on timeout | 04-01 | Let SDK continue in background; we just stop caring |
+| 5s delayed cleanup after timeout | 04-01 | Allows status queries before session deletion |
 
 ### Known Issues for v1.1
 
@@ -87,7 +90,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-25T12:00:00Z
-Stopped at: Roadmap created for v1.1 Session Reliability
-Resume file: —
-Next: `/gsd:plan-phase 4`
+Last session: 2026-01-25T21:03:21Z
+Stopped at: Completed 04-01-PLAN.md (Session Lifecycle Infrastructure)
+Resume file: None
+Next: Execute 04-02-PLAN.md
