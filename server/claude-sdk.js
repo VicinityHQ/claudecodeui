@@ -146,6 +146,61 @@ function resetInactivityTimer(sessionId) {
   session.lastActivity = Date.now();
 }
 
+/**
+ * Handles session timeout by notifying client and cleaning up
+ * Does NOT abort SDK - lets it continue in background per design decision
+ * @param {string} sessionId - Session identifier
+ * @param {string} reason - Timeout reason ('inactivity' or 'max_duration')
+ * @param {string} message - Human-readable timeout message
+ * @param {Object} ws - WebSocket connection for error notification
+ */
+function handleSessionTimeout(sessionId, reason, message, ws) {
+  const session = activeSessions.get(sessionId);
+
+  if (!session) {
+    return;
+  }
+
+  // Guard against race condition - don't send duplicate errors
+  // if session already completed or errored
+  if (session.status === SessionStatus.COMPLETE || session.status === SessionStatus.ERROR) {
+    console.log(`Session ${sessionId} timeout skipped: already in ${session.status} state`);
+    return;
+  }
+
+  console.log(`Session ${sessionId} timeout: ${reason} - ${message}`);
+
+  // Transition to timeout state
+  transitionSessionState(sessionId, SessionStatus.TIMEOUT);
+
+  // Send structured error to WebSocket if connection is open
+  if (ws && ws.readyState === 1) {
+    ws.send(JSON.stringify({
+      type: 'claude-error',
+      error: message,
+      sessionId: sessionId,
+      timeout: true,
+      reason: reason,
+      timestamp: new Date().toISOString(),
+      category: 'timeout'
+    }));
+  }
+
+  // Clear both timers
+  if (session.inactivityTimer) {
+    clearTimeout(session.inactivityTimer);
+  }
+  if (session.maxDurationTimer) {
+    clearTimeout(session.maxDurationTimer);
+  }
+
+  // DO NOT call SDK abort - let it continue in background per CONTEXT.md decision
+  // Schedule delayed cleanup (5 seconds) to allow status queries
+  setTimeout(() => {
+    activeSessions.delete(sessionId);
+  }, 5000);
+}
+
 // Session tracking: Map of session IDs to active query instances
 const activeSessions = new Map();
 // In-memory registry of pending tool approvals keyed by requestId.
