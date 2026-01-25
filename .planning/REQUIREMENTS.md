@@ -1,88 +1,74 @@
-# Requirements: ClaudeCodeUI Memory Optimization
+# Requirements: ClaudeCodeUI Session Reliability
 
-**Defined:** 2026-01-24
-**Core Value:** ClaudeCodeUI must load and display projects of any size without running out of memory
+**Defined:** 2026-01-25
+**Core Value:** Users must be able to reliably start conversations and receive responses without stuck sessions or message bleeding
 
-## v1 Requirements
+## v1.1 Requirements
 
-Requirements for memory optimization release.
+Requirements for session reliability milestone.
 
-### File Reading Optimization
+### Session Lifecycle
 
-- [ ] **READ-01**: Byte-limit JSONL file reads to 100KB maximum for metadata extraction
-- [ ] **READ-02**: Stop reading file immediately once `cwd` value is found
-- [ ] **READ-03**: Use file `mtime` for session timestamps instead of parsing timestamp fields
-- [ ] **READ-04**: Graceful fallback to defaults when byte-limited read doesn't find expected data
+- [ ] **SESS-01**: Session ID captured reliably from SDK on first streaming message
+- [ ] **SESS-02**: Session status tracked through lifecycle (pending → active → complete/error)
+- [ ] **SESS-03**: Session completion detected when SDK async generator finishes
+- [ ] **SESS-04**: Stuck session timeout triggers after 60 seconds of no activity
 
-### Lazy Loading
+### UI State Management
 
-- [x] **LAZY-01**: Derive session list from JSONL filenames without parsing file content
-- [x] **LAZY-02**: Load session summaries on-demand only when project is expanded in sidebar
-- [x] **LAZY-03**: Return minimal project metadata on initial `/api/projects` call
-- [x] **LAZY-04**: Add endpoint for fetching session summaries separately
+- [ ] **UI-01**: Input field clears when user switches to different project
+- [ ] **UI-02**: Chat messages reset when user switches to different project
+- [ ] **UI-03**: Chat messages reset when user starts new session in same project
+- [ ] **UI-04**: Loading state accurately reflects actual SDK streaming status
+- [ ] **UI-05**: Error state displayed when session fails (not just spinner)
 
-### UI Indicators
+### Error Handling
 
-- [x] **UI-01**: Display total project size (sum of session files) in project card
-- [x] **UI-02**: Display individual session file size in session list
-- [x] **UI-03**: Format sizes appropriately (KB, MB, GB with 1 decimal)
-
-### Backward Compatibility
-
-- [ ] **COMPAT-01**: Preserve existing API response structure for frontend compatibility
-- [ ] **COMPAT-02**: Existing skip patterns and size limits continue to work
-- [ ] **COMPAT-03**: Full message content still available via `getSessionMessages()`
+- [ ] **ERR-01**: Timeout displays clear error after 60 seconds of no SDK activity
+- [ ] **ERR-02**: SDK errors surface to UI with meaningful message
+- [ ] **ERR-03**: WebSocket disconnect shows reconnection status indicator
 
 ## v2 Requirements
 
-Deferred to future release.
+Deferred to future milestone.
 
-### Progressive Loading
+### Advanced Reliability
 
-- **PROG-01**: Prefetch session metadata in background after initial load
-- **PROG-02**: Load more sessions as user scrolls
-- **PROG-03**: Cache session metadata with TTL
-
-### Advanced UI
-
-- **ADV-01**: Visual warning for projects over 1GB
-- **ADV-02**: Storage breakdown chart in settings
-- **ADV-03**: Session age indicators (old sessions that could be archived)
+- **ADV-01**: Heartbeat/keep-alive mechanism to detect stale sessions
+- **ADV-02**: Retry mechanism for transient failures
+- **ADV-03**: Persist draft messages per-project (not lost on accidental switch)
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| Session archiving/cleanup | User responsibility; ClaudeCodeUI is read-focused |
-| JSONL compression | Would change Claude Code's data format |
-| Database caching | Adds staleness complexity; files change frequently |
-| Splitting large files | Claude Code's responsibility |
-| Real-time memory monitoring | Over-engineering for this problem |
+| Session recovery after server restart | Too complex for this milestone |
+| Message persistence across browser refresh | Requires IndexedDB/localStorage architecture |
+| Multi-tab session coordination | Edge case, adds complexity |
+| Offline message queueing | Already have basic queue; deeper offline support deferred |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| READ-01 | Phase 1 | Complete |
-| READ-02 | Phase 1 | Complete |
-| READ-03 | Phase 1 | Complete |
-| READ-04 | Phase 1 | Complete |
-| COMPAT-01 | Phase 1 | Complete |
-| COMPAT-02 | Phase 1 | Complete |
-| COMPAT-03 | Phase 1 | Complete |
-| LAZY-01 | Phase 2 | Complete |
-| LAZY-02 | Phase 2 | Complete |
-| LAZY-03 | Phase 2 | Complete |
-| LAZY-04 | Phase 2 | Complete |
-| UI-01 | Phase 3 | Complete |
-| UI-02 | Phase 3 | Complete |
-| UI-03 | Phase 3 | Complete |
+| SESS-01 | TBD | Pending |
+| SESS-02 | TBD | Pending |
+| SESS-03 | TBD | Pending |
+| SESS-04 | TBD | Pending |
+| UI-01 | TBD | Pending |
+| UI-02 | TBD | Pending |
+| UI-03 | TBD | Pending |
+| UI-04 | TBD | Pending |
+| UI-05 | TBD | Pending |
+| ERR-01 | TBD | Pending |
+| ERR-02 | TBD | Pending |
+| ERR-03 | TBD | Pending |
 
 **Coverage:**
-- v1 requirements: 14 total
-- Mapped to phases: 14
-- Unmapped: 0
+- v1.1 requirements: 12 total
+- Mapped to phases: 0 (roadmap pending)
+- Unmapped: 12
 
 ---
-*Requirements defined: 2026-01-24*
-*Last updated: 2026-01-24 after Phase 3 completion*
+*Requirements defined: 2026-01-25*
+*Last updated: 2026-01-25 after initial definition*
