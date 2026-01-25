@@ -469,14 +469,25 @@ async function loadMcpConfig(cwd) {
  */
 async function queryClaudeSDK(command, options = {}, ws) {
   const { sessionId } = options;
-  let capturedSessionId = sessionId;
+
+  // Check if trying to resume a completed session (sessionId exists but not in activeSessions)
+  // If so, start a new session instead of trying to resume (SDK doesn't support session continuation)
+  const isCompletedSession = sessionId && !activeSessions.has(sessionId);
+  let capturedSessionId = isCompletedSession ? null : sessionId;
   let sessionCreatedSent = false;
   let tempImagePaths = [];
   let tempDir = null;
+  // Treat completed sessions as new for session-created event purposes
+  const effectiveSessionId = isCompletedSession ? null : sessionId;
+
+  if (isCompletedSession) {
+    console.log(`Session ${sessionId} is completed. Starting new session for this message.`);
+  }
 
   try {
     // Map CLI options to SDK format
-    const sdkOptions = mapCliOptionsToSDK(options);
+    // If session is completed, don't pass sessionId to SDK (prevent resume attempt)
+    const sdkOptions = mapCliOptionsToSDK(isCompletedSession ? { ...options, sessionId: undefined } : options);
 
     // Load MCP configuration
     const mcpServers = await loadMcpConfig(options.cwd);
@@ -519,7 +530,7 @@ async function queryClaudeSDK(command, options = {}, ws) {
         requestId,
         toolName,
         input,
-        sessionId: capturedSessionId || sessionId || null
+        sessionId: capturedSessionId || effectiveSessionId || null
       });
 
       // Wait for the UI; if the SDK cancels, notify the UI so it can dismiss the banner.
@@ -531,7 +542,7 @@ async function queryClaudeSDK(command, options = {}, ws) {
             type: 'claude-permission-cancelled',
             requestId,
             reason,
-            sessionId: capturedSessionId || sessionId || null
+            sessionId: capturedSessionId || effectiveSessionId || null
           });
         }
       });
@@ -586,14 +597,14 @@ async function queryClaudeSDK(command, options = {}, ws) {
         }
 
         // Send session-created event only once for new sessions
-        if (!sessionId && !sessionCreatedSent) {
+        if (!effectiveSessionId && !sessionCreatedSent) {
           sessionCreatedSent = true;
           ws.send({
             type: 'session-created',
             sessionId: capturedSessionId
           });
         } else {
-          console.log('Not sending session-created. sessionId:', sessionId, 'sessionCreatedSent:', sessionCreatedSent);
+          console.log('Not sending session-created. effectiveSessionId:', effectiveSessionId, 'sessionCreatedSent:', sessionCreatedSent);
         }
       } else {
         console.log('No session_id in message or already captured. message.session_id:', message.session_id, 'capturedSessionId:', capturedSessionId);
@@ -635,7 +646,7 @@ async function queryClaudeSDK(command, options = {}, ws) {
       type: 'claude-complete',
       sessionId: capturedSessionId,
       exitCode: 0,
-      isNewSession: !sessionId && !!command
+      isNewSession: !effectiveSessionId && !!command
     });
     console.log('claude-complete event sent');
 
