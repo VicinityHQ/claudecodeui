@@ -75,6 +75,8 @@ async function cleanupSession(sessionId) {
     return;
   }
 
+  console.log(`[SESSION] Cleaning up ${sessionId}, status: ${session?.status}`);
+
   // Clear timeout timers
   if (session.inactivityTimer) {
     clearTimeout(session.inactivityTimer);
@@ -98,6 +100,7 @@ async function cleanupSession(sessionId) {
  * @param {Object} ws - WebSocket connection for timeout notifications
  */
 function setupSessionTimeouts(sessionId, session, ws) {
+  console.log(`[SESSION] Setting up timeouts for ${sessionId}`);
   if (!session) {
     return;
   }
@@ -131,6 +134,8 @@ function resetInactivityTimer(sessionId) {
   if (!session) {
     return;
   }
+
+  console.log(`[SESSION] Activity detected for ${sessionId}, resetting inactivity timer`);
 
   // Clear existing inactivity timer
   if (session.inactivityTimer) {
