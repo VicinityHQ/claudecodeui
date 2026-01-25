@@ -4,8 +4,10 @@ export function useWebSocket() {
   const [ws, setWs] = useState(null);
   const [messages, setMessages] = useState([]);
   const [isConnected, setIsConnected] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
   const reconnectTimeoutRef = useRef(null);
   const wsRef = useRef(null);
+  const messageQueueRef = useRef([]);
 
   useEffect(() => {
     let mounted = true;
@@ -46,6 +48,14 @@ export function useWebSocket() {
           console.log('[WS] Connected');
           setIsConnected(true);
           setWs(websocket);
+
+          // Flush queued messages
+          while (messageQueueRef.current.length > 0) {
+            const queuedMessage = messageQueueRef.current.shift();
+            console.log('[WS] Sending queued message:', queuedMessage.type);
+            websocket.send(JSON.stringify(queuedMessage));
+          }
+          setPendingCount(0);
         };
 
         websocket.onmessage = (event) => {
@@ -106,7 +116,16 @@ export function useWebSocket() {
       console.log('[WS] Sending:', message.type);
       currentWs.send(JSON.stringify(message));
     } else {
-      console.warn('[WS] Cannot send - not connected. readyState:', currentWs?.readyState);
+      console.log('[WS] Queuing message (not connected):', message.type);
+
+      // Limit queue size to prevent memory issues during extended disconnection
+      if (messageQueueRef.current.length >= 100) {
+        console.warn('[WS] Message queue full, dropping oldest message');
+        messageQueueRef.current.shift();
+      }
+
+      messageQueueRef.current.push(message);
+      setPendingCount(messageQueueRef.current.length);
     }
   }, []);
 
@@ -114,6 +133,7 @@ export function useWebSocket() {
     ws,
     sendMessage,
     messages,
-    isConnected
+    isConnected,
+    pendingCount
   };
 }
