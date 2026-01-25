@@ -1859,19 +1859,8 @@ const ImageAttachment = ({ file, onRemove, uploadProgress, error }) => {
 function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, messages, onFileOpen, onInputFocusChange, onSessionActive, onSessionInactive, onSessionProcessing, onSessionNotProcessing, processingSessions, onReplaceTemporarySession, onNavigateToSession, onShowSettings, autoExpandTools, showRawParameters, showThinking, autoScrollToBottom, sendByCtrlEnter, externalMessageUpdate, onTaskClick, onShowAllTasks }) {
   const { tasksEnabled, isTaskMasterInstalled } = useTasksSettings();
   const { t } = useTranslation('chat');
-  const [input, setInput] = useState(() => {
-    if (typeof window !== 'undefined' && selectedProject) {
-      return safeLocalStorage.getItem(`draft_input_${selectedProject.name}`) || '';
-    }
-    return '';
-  });
-  const [chatMessages, setChatMessages] = useState(() => {
-    if (typeof window !== 'undefined' && selectedProject) {
-      const saved = safeLocalStorage.getItem(`chat_messages_${selectedProject.name}`);
-      return saved ? JSON.parse(saved) : [];
-    }
-    return [];
-  });
+  const [input, setInput] = useState('');
+  const [chatMessages, setChatMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentSessionId, setCurrentSessionId] = useState(selectedSession?.id || null);
   const [isInputFocused, setIsInputFocused] = useState(false);
@@ -3171,17 +3160,6 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
       safeLocalStorage.setItem(`chat_messages_${selectedProject.name}`, JSON.stringify(chatMessages));
     }
   }, [chatMessages, selectedProject]);
-
-  // Load saved state when project changes (but don't interfere with session loading)
-  useEffect(() => {
-    if (selectedProject) {
-      // Always load saved input draft for the project
-      const savedInput = safeLocalStorage.getItem(`draft_input_${selectedProject.name}`) || '';
-      if (savedInput !== input) {
-        setInput(savedInput);
-      }
-    }
-  }, [selectedProject?.name]);
 
   // Track processing state: notify parent when isLoading becomes true
   // Note: onSessionNotProcessing is called directly in completion message handlers
