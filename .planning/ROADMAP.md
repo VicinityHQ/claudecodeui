@@ -91,8 +91,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 05-01-PLAN.md - State reset with key prop for project switches
-- [ ] 05-02-PLAN.md - Loading and error state management for sessions
+- [x] 05-01-PLAN.md - State reset with key prop for project switches
+- [x] 05-02-PLAN.md - Loading and error state management for sessions
 
 #### Phase 6: Error UX
 **Goal**: Users receive clear feedback when things go wrong
@@ -118,5 +118,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 2. Lazy Loading Architecture | v1.0 | 2/2 | Complete | 2026-01-24 |
 | 3. UI Size Indicators | v1.0 | 1/1 | Complete | 2026-01-24 |
 | 4. Backend Session Lifecycle | v1.1 | 2/2 | Complete | 2026-01-25 |
-| 5. Frontend State Management | v1.1 | 0/2 | Not started | - |
+| 5. Frontend State Management | v1.1 | 2/2 | Complete | 2026-01-25 |
 | 6. Error UX | v1.1 | 0/? | Not started | - |

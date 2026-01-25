@@ -16,11 +16,11 @@ Requirements for session reliability milestone.
 
 ### UI State Management
 
-- [ ] **UI-01**: Input field clears when user switches to different project
-- [ ] **UI-02**: Chat messages reset when user switches to different project
-- [ ] **UI-03**: Chat messages reset when user starts new session in same project
-- [ ] **UI-04**: Loading state accurately reflects actual SDK streaming status
-- [ ] **UI-05**: Error state displayed when session fails (not just spinner)
+- [x] **UI-01**: Input field clears when user switches to different project
+- [x] **UI-02**: Chat messages reset when user switches to different project
+- [x] **UI-03**: Chat messages reset when user starts new session in same project
+- [x] **UI-04**: Loading state accurately reflects actual SDK streaming status
+- [x] **UI-05**: Error state displayed when session fails (not just spinner)
 
 ### Error Handling
 
@@ -56,11 +56,11 @@ Deferred to future milestone.
 | SESS-03 | Phase 4 | Complete |
 | SESS-04 | Phase 4 | Complete |
 | ERR-02 | Phase 4 | Complete |
-| UI-01 | Phase 5 | Pending |
-| UI-02 | Phase 5 | Pending |
-| UI-03 | Phase 5 | Pending |
-| UI-04 | Phase 5 | Pending |
-| UI-05 | Phase 5 | Pending |
+| UI-01 | Phase 5 | Complete |
+| UI-02 | Phase 5 | Complete |
+| UI-03 | Phase 5 | Complete |
+| UI-04 | Phase 5 | Complete |
+| UI-05 | Phase 5 | Complete |
 | ERR-01 | Phase 6 | Pending |
 | ERR-03 | Phase 6 | Pending |
 
