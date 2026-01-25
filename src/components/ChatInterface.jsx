@@ -1862,6 +1862,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
   const [input, setInput] = useState('');
   const [chatMessages, setChatMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [sessionError, setSessionError] = useState(null);
   const [currentSessionId, setCurrentSessionId] = useState(selectedSession?.id || null);
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [sessionMessages, setSessionMessages] = useState([]);
@@ -3176,6 +3177,9 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
       if (shouldBeProcessing && !isLoading) {
         setIsLoading(true);
         setCanAbortSession(true); // Assume processing sessions can be aborted
+      } else if (!shouldBeProcessing && isLoading) {
+        // Clear loading state when switching to non-processing session
+        setIsLoading(false);
       }
     }
   }, [currentSessionId, processingSessions]);
@@ -3500,11 +3504,24 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
         }
 
         case 'claude-error':
+        case 'session-error':
+          setIsLoading(false);
+          setCanAbortSession(false);
+          setClaudeStatus(null);
+          setSessionError(latestMessage.error || 'Session failed');
+          // Still add to chat for visibility
           setChatMessages(prev => [...prev, {
             type: 'error',
             content: `Error: ${latestMessage.error}`,
             timestamp: new Date()
           }]);
+          // Mark session as inactive
+          if (latestMessage.sessionId && onSessionInactive) {
+            onSessionInactive(latestMessage.sessionId);
+          }
+          if (latestMessage.sessionId && onSessionNotProcessing) {
+            onSessionNotProcessing(latestMessage.sessionId);
+          }
           break;
           
         case 'cursor-system':
@@ -4243,6 +4260,16 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     if (!input.trim() || isLoading || !selectedProject) return;
+
+    // Clear messages when starting a new session (not resuming)
+    const isNewSession = !currentSessionId && !selectedSession;
+    if (isNewSession) {
+      setChatMessages([]);
+      setSessionMessages([]);
+    }
+
+    // Clear error state when starting a new message
+    setSessionError(null);
 
     // Apply thinking mode prefix if selected
     let messageContent = input;
@@ -5029,7 +5056,19 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
             })}
           </>
         )}
-        
+
+        {sessionError && !isLoading && (
+          <div className="text-center py-2 px-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg mb-2">
+            <p className="text-red-600 dark:text-red-400 text-sm">{sessionError}</p>
+            <button
+              onClick={() => setSessionError(null)}
+              className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-300 mt-1"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
         {isLoading && (
           <div className="chat-message assistant">
             <div className="w-full">
