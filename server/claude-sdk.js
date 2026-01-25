@@ -21,6 +21,72 @@ import path from 'path';
 import os from 'os';
 import { CLAUDE_MODELS } from '../shared/modelConstants.js';
 
+// Session status constants for lifecycle tracking
+const SessionStatus = {
+  PENDING: 'pending',    // Session created, waiting for first SDK message
+  ACTIVE: 'active',      // SDK streaming messages
+  COMPLETE: 'complete',  // SDK generator finished naturally
+  ERROR: 'error',        // SDK threw exception
+  TIMEOUT: 'timeout'     // Timeout fired - inactivity or max duration
+};
+
+// Terminal states that cannot transition to other states
+const TERMINAL_STATES = [SessionStatus.COMPLETE, SessionStatus.ERROR, SessionStatus.TIMEOUT];
+
+/**
+ * Transitions a session to a new status with validation
+ * @param {string} sessionId - Session identifier
+ * @param {string} newStatus - New status from SessionStatus
+ * @returns {boolean} True if transition succeeded, false otherwise
+ */
+function transitionSessionState(sessionId, newStatus) {
+  const session = activeSessions.get(sessionId);
+
+  if (!session) {
+    console.warn(`Cannot transition session ${sessionId}: session not found`);
+    return false;
+  }
+
+  const oldStatus = session.status;
+
+  // Prevent transitions from terminal states
+  if (TERMINAL_STATES.includes(oldStatus)) {
+    console.warn(`Cannot transition session ${sessionId} from terminal state ${oldStatus} to ${newStatus}`);
+    return false;
+  }
+
+  session.status = newStatus;
+  console.log(`Session ${sessionId}: ${oldStatus} -> ${newStatus}`);
+  return true;
+}
+
+/**
+ * Cleans up a session including timers and temp files
+ * @param {string} sessionId - Session identifier
+ */
+async function cleanupSession(sessionId) {
+  const session = activeSessions.get(sessionId);
+
+  if (!session) {
+    return;
+  }
+
+  // Clear timeout timers
+  if (session.inactivityTimer) {
+    clearTimeout(session.inactivityTimer);
+  }
+  if (session.maxDurationTimer) {
+    clearTimeout(session.maxDurationTimer);
+  }
+
+  // Clean up temporary files
+  await cleanupTempFiles(session.tempImagePaths, session.tempDir);
+
+  // Remove session from map
+  activeSessions.delete(sessionId);
+  console.log(`Session ${sessionId} cleaned up`);
+}
+
 // Session tracking: Map of session IDs to active query instances
 const activeSessions = new Map();
 // In-memory registry of pending tool approvals keyed by requestId.
@@ -230,9 +296,13 @@ function addSession(sessionId, queryInstance, tempImagePaths = [], tempDir = nul
   activeSessions.set(sessionId, {
     instance: queryInstance,
     startTime: Date.now(),
-    status: 'active',
+    status: SessionStatus.PENDING,
     tempImagePaths,
-    tempDir
+    tempDir,
+    lastActivity: Date.now(),
+    inactivityTimer: null,
+    maxDurationTimer: null,
+    ws: null
   });
 }
 
