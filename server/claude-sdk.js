@@ -33,6 +33,10 @@ const SessionStatus = {
 // Terminal states that cannot transition to other states
 const TERMINAL_STATES = [SessionStatus.COMPLETE, SessionStatus.ERROR, SessionStatus.TIMEOUT];
 
+// Timeout constants for session lifecycle management
+const INACTIVITY_TIMEOUT_MS = 60_000;  // 60 seconds - no SDK messages
+const MAX_DURATION_MS = 600_000;       // 10 minutes - absolute maximum session length
+
 /**
  * Transitions a session to a new status with validation
  * @param {string} sessionId - Session identifier
@@ -85,6 +89,61 @@ async function cleanupSession(sessionId) {
   // Remove session from map
   activeSessions.delete(sessionId);
   console.log(`Session ${sessionId} cleaned up`);
+}
+
+/**
+ * Sets up both inactivity and max duration timeouts for a session
+ * @param {string} sessionId - Session identifier
+ * @param {Object} session - Session object from activeSessions
+ * @param {Object} ws - WebSocket connection for timeout notifications
+ */
+function setupSessionTimeouts(sessionId, session, ws) {
+  if (!session) {
+    return;
+  }
+
+  // Set inactivity timeout (resets on each message)
+  session.inactivityTimer = setTimeout(() => {
+    handleSessionTimeout(sessionId, 'inactivity', 'No SDK activity for 60 seconds', ws);
+  }, INACTIVITY_TIMEOUT_MS);
+
+  // Set max duration timeout (never resets)
+  session.maxDurationTimer = setTimeout(() => {
+    handleSessionTimeout(sessionId, 'max_duration', 'Session exceeded 10 minute maximum duration', ws);
+  }, MAX_DURATION_MS);
+
+  // Record timestamps and WebSocket reference
+  session.startTime = Date.now();
+  session.lastActivity = Date.now();
+  session.ws = ws;
+
+  console.log(`Timeouts armed for session ${sessionId}: inactivity=60s, max=10m`);
+}
+
+/**
+ * Resets the inactivity timer on message activity
+ * Does NOT reset max duration timer - that's an absolute limit
+ * @param {string} sessionId - Session identifier
+ */
+function resetInactivityTimer(sessionId) {
+  const session = activeSessions.get(sessionId);
+
+  if (!session) {
+    return;
+  }
+
+  // Clear existing inactivity timer
+  if (session.inactivityTimer) {
+    clearTimeout(session.inactivityTimer);
+  }
+
+  // Set new inactivity timeout
+  session.inactivityTimer = setTimeout(() => {
+    handleSessionTimeout(sessionId, 'inactivity', 'No SDK activity for 60 seconds', session.ws);
+  }, INACTIVITY_TIMEOUT_MS);
+
+  // Update last activity timestamp
+  session.lastActivity = Date.now();
 }
 
 // Session tracking: Map of session IDs to active query instances
