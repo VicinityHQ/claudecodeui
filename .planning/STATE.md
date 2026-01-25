@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 Phase: 3 of 3 (UI Size Indicators)
 Plan: 01 of 1 (completed)
 Status: Phase 3 complete — MILESTONE COMPLETE
-Last activity: 2026-01-24 - Completed 03-01-PLAN.md (Session size display in sidebar)
+Last activity: 2025-01-25 - Completed quick task 001: WebSocket message queuing
 
 Progress: [██████████] 100% (6/6 plans complete)
 
@@ -71,6 +71,12 @@ None yet.
 ### Blockers/Concerns
 
 - sqlite3 native module has architecture compatibility issues on local development machine (pre-existing issue, unrelated to optimization work)
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 001 | Fix WebSocket message queuing to prevent silent drops | 2025-01-25 | 61a8f18 | [001-investigate-ui-backend-messaging](./quick/001-investigate-ui-backend-messaging/) |
 
 ## Session Continuity
 
