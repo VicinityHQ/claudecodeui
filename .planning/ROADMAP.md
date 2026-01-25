@@ -2,13 +2,13 @@
 
 ## Milestones
 
-- ✅ **v1.0 Memory Optimization** - Phases 1-3 (shipped 2026-01-24)
-- 🚧 **v1.1 Session Reliability** - Phases 4-6 (in progress)
+- v1.0 Memory Optimization - Phases 1-3 (shipped 2026-01-24)
+- v1.1 Session Reliability - Phases 4-6 (in progress)
 
 ## Phases
 
 <details>
-<summary>✅ v1.0 Memory Optimization (Phases 1-3) - SHIPPED 2026-01-24</summary>
+<summary>v1.0 Memory Optimization (Phases 1-3) - SHIPPED 2026-01-24</summary>
 
 ### Phase 1: File Reading Optimization
 **Goal**: Server can extract metadata from large JSONL files without running out of memory
@@ -58,7 +58,7 @@ Plans:
 
 </details>
 
-### 🚧 v1.1 Session Reliability (In Progress)
+### v1.1 Session Reliability (In Progress)
 
 **Milestone Goal:** Make session and message handling bulletproof. Users never get stuck sessions, lost messages, or cross-project state bleeding.
 
@@ -68,24 +68,24 @@ Plans:
 **Requirements**: SESS-01, SESS-02, SESS-03, SESS-04, ERR-02
 **Success Criteria** (what must be TRUE):
   1. Backend captures session ID from SDK on first streaming message
-  2. Backend tracks session status (pending → active → complete/error) in activeSessions Map
+  2. Backend tracks session status (pending -> active -> complete/error) in activeSessions Map
   3. Backend detects when SDK async generator completes and emits claude-complete event
   4. Backend triggers timeout after 60 seconds of no SDK activity and marks session as failed
   5. SDK errors propagate to UI via WebSocket with meaningful error messages
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 04-01: TBD
-- [ ] 04-02: TBD
+- [ ] 04-01-PLAN.md - Session lifecycle infrastructure with status tracking and dual timeout mechanism
+- [ ] 04-02-PLAN.md - Integrate timeouts into SDK flow and enhance error messages
 
 #### Phase 5: Frontend State Management
 **Goal**: UI state clears cleanly when switching projects or starting new sessions
 **Depends on**: Phase 4
 **Requirements**: UI-01, UI-02, UI-03, UI-04, UI-05
 **Success Criteria** (what must be TRUE):
-  1. User switches to different project → input field clears immediately
-  2. User switches to different project → chat messages reset to empty
-  3. User sends message in same project → previous chat messages clear (new session started)
+  1. User switches to different project -> input field clears immediately
+  2. User switches to different project -> chat messages reset to empty
+  3. User sends message in same project -> previous chat messages clear (new session started)
   4. Loading spinner shows only when SDK is actively streaming messages
   5. User sees error message (not spinner) when session creation fails
 **Plans**: TBD
@@ -99,9 +99,9 @@ Plans:
 **Depends on**: Phase 5
 **Requirements**: ERR-01, ERR-03
 **Success Criteria** (what must be TRUE):
-  1. User waits 60+ seconds with no response → sees "Request timed out" error message
-  2. WebSocket disconnects → user sees "Reconnecting..." indicator
-  3. WebSocket reconnects → indicator disappears, queued messages send
+  1. User waits 60+ seconds with no response -> sees "Request timed out" error message
+  2. WebSocket disconnects -> user sees "Reconnecting..." indicator
+  3. WebSocket reconnects -> indicator disappears, queued messages send
 **Plans**: TBD
 
 Plans:
@@ -110,13 +110,13 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 1. File Reading Optimization | v1.0 | 3/3 | Complete | 2026-01-24 |
 | 2. Lazy Loading Architecture | v1.0 | 2/2 | Complete | 2026-01-24 |
 | 3. UI Size Indicators | v1.0 | 1/1 | Complete | 2026-01-24 |
-| 4. Backend Session Lifecycle | v1.1 | 0/? | Not started | - |
+| 4. Backend Session Lifecycle | v1.1 | 0/2 | Planned | - |
 | 5. Frontend State Management | v1.1 | 0/? | Not started | - |
 | 6. Error UX | v1.1 | 0/? | Not started | - |
