@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-01-25)
 
 ## Current Position
 
-Phase: 4 of 6 (Backend Session Lifecycle) — COMPLETE
-Plan: All plans executed and verified
-Status: Phase complete
-Last activity: 2026-01-25 — Phase 4 executed and verified
+Phase: 5 of 6 (Frontend State Management)
+Plan: 1 of ? (05-01 complete)
+Status: In progress
+Last activity: 2026-01-25 — Completed 05-01-PLAN.md
 
-Progress: [██████░░░░] 67% (4/6 phases complete)
+Progress: [███████░░░] 72% (8.3/12 plans complete)
 
 ## Previous Milestone: v1.0 Memory Optimization
 
@@ -33,14 +33,15 @@ Progress: [██████░░░░] 67% (4/6 phases complete)
 | Phase | Plans | Status |
 |-------|-------|--------|
 | 04-backend-session-lifecycle | 2/2 | Complete |
-| 05-frontend-state-management | 0/? | Not started |
+| 05-frontend-state-management | 1/? | In progress |
 | 06-error-ux | 0/? | Not started |
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8 (6 v1.0 + 2 v1.1)
+- Total plans completed: 9 (6 v1.0 + 3 v1.1)
 - Phase 4 duration: ~6 min (2 plans)
+- Phase 5 current: 1 min (1 plan)
 
 **By Phase:**
 
@@ -68,13 +69,16 @@ Recent decisions affecting current work:
 | 5s delayed cleanup after timeout | 04-01 | Allows status queries before session deletion |
 | Pass ws parameter explicitly to setupSessionTimeouts | 04-02 | Avoids circular reference issues |
 | Error categorization for mobile debugging | 04-02 | Helps users debug without DevTools |
+| React key prop based on selectedProject.name | 05-01 | Forces ChatInterface remount on project change |
+| Remove localStorage restoration on mount | 05-01 | Clean state guaranteed by React key prop pattern |
+| Keep localStorage persistence for draft saving | 05-01 | Save drafts during use, don't restore on mount |
 
 ### Known Issues for v1.1
 
 From user report (2026-01-25):
 
 1. **Stuck sessions**: ✓ ADDRESSED in Phase 4 — 60s inactivity timeout now triggers session failure with structured error
-2. **Message bleeding**: To be addressed in Phase 5 — Frontend state management
+2. **Message bleeding**: ✓ PARTIALLY ADDRESSED in Phase 5 Plan 01 — ChatInterface remounts on project switch
 3. **Silent failures**: ✓ PARTIALLY ADDRESSED in Phase 4 — Error categorization and timestamps added
 
 ### Blockers/Concerns
@@ -94,7 +98,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-25T21:15:00Z
-Stopped at: Phase 4 complete
+Last session: 2026-01-25T21:35:00Z
+Stopped at: Completed 05-01-PLAN.md
 Resume file: —
-Next: `/gsd:discuss-phase 5` or `/gsd:plan-phase 5`
+Next: Plan 05-02 (Session State Reset within same project)
