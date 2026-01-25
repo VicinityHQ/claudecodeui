@@ -1,22 +1,14 @@
-# Roadmap: ClaudeCodeUI Memory Optimization
+# Roadmap: ClaudeCodeUI
 
-## Overview
+## Milestones
 
-Transform ClaudeCodeUI from crashing on large projects to handling projects of any size through byte-limited file reading, lazy loading architecture, and size visibility in the UI. Each phase builds on the previous, starting with optimized file reading, enabling lazy loading patterns, and finishing with user-facing size indicators.
+- ✅ **v1.0 Memory Optimization** - Phases 1-3 (shipped 2026-01-24)
+- 🚧 **v1.1 Session Reliability** - Phases 4-6 (in progress)
 
 ## Phases
 
-**Phase Numbering:**
-- Integer phases (1, 2, 3): Planned milestone work
-- Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
-
-Decimal phases appear between their surrounding integers in numeric order.
-
-- [x] **Phase 1: File Reading Optimization** - Byte-limit JSONL reads and graceful fallbacks
-- [x] **Phase 2: Lazy Loading Architecture** - On-demand session metadata and new API endpoints
-- [x] **Phase 3: UI Size Indicators** - Display project and session sizes for visibility
-
-## Phase Details
+<details>
+<summary>✅ v1.0 Memory Optimization (Phases 1-3) - SHIPPED 2026-01-24</summary>
 
 ### Phase 1: File Reading Optimization
 **Goal**: Server can extract metadata from large JSONL files without running out of memory
@@ -64,13 +56,67 @@ Plans:
 Plans:
 - [x] 03-01-PLAN.md - Add session file size to backend and display in sidebar
 
+</details>
+
+### 🚧 v1.1 Session Reliability (In Progress)
+
+**Milestone Goal:** Make session and message handling bulletproof. Users never get stuck sessions, lost messages, or cross-project state bleeding.
+
+#### Phase 4: Backend Session Lifecycle
+**Goal**: SDK sessions tracked from creation through completion with proper timeout handling
+**Depends on**: Phase 3
+**Requirements**: SESS-01, SESS-02, SESS-03, SESS-04, ERR-02
+**Success Criteria** (what must be TRUE):
+  1. Backend captures session ID from SDK on first streaming message
+  2. Backend tracks session status (pending → active → complete/error) in activeSessions Map
+  3. Backend detects when SDK async generator completes and emits claude-complete event
+  4. Backend triggers timeout after 60 seconds of no SDK activity and marks session as failed
+  5. SDK errors propagate to UI via WebSocket with meaningful error messages
+**Plans**: TBD
+
+Plans:
+- [ ] 04-01: TBD
+- [ ] 04-02: TBD
+
+#### Phase 5: Frontend State Management
+**Goal**: UI state clears cleanly when switching projects or starting new sessions
+**Depends on**: Phase 4
+**Requirements**: UI-01, UI-02, UI-03, UI-04, UI-05
+**Success Criteria** (what must be TRUE):
+  1. User switches to different project → input field clears immediately
+  2. User switches to different project → chat messages reset to empty
+  3. User sends message in same project → previous chat messages clear (new session started)
+  4. Loading spinner shows only when SDK is actively streaming messages
+  5. User sees error message (not spinner) when session creation fails
+**Plans**: TBD
+
+Plans:
+- [ ] 05-01: TBD
+- [ ] 05-02: TBD
+
+#### Phase 6: Error UX
+**Goal**: Users receive clear feedback when things go wrong
+**Depends on**: Phase 5
+**Requirements**: ERR-01, ERR-03
+**Success Criteria** (what must be TRUE):
+  1. User waits 60+ seconds with no response → sees "Request timed out" error message
+  2. WebSocket disconnects → user sees "Reconnecting..." indicator
+  3. WebSocket reconnects → indicator disappears, queued messages send
+**Plans**: TBD
+
+Plans:
+- [ ] 06-01: TBD
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 1. File Reading Optimization | 3/3 | Complete | 2026-01-24 |
-| 2. Lazy Loading Architecture | 2/2 | Complete | 2026-01-24 |
-| 3. UI Size Indicators | 1/1 | Complete | 2026-01-24 |
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 1. File Reading Optimization | v1.0 | 3/3 | Complete | 2026-01-24 |
+| 2. Lazy Loading Architecture | v1.0 | 2/2 | Complete | 2026-01-24 |
+| 3. UI Size Indicators | v1.0 | 1/1 | Complete | 2026-01-24 |
+| 4. Backend Session Lifecycle | v1.1 | 0/? | Not started | - |
+| 5. Frontend State Management | v1.1 | 0/? | Not started | - |
+| 6. Error UX | v1.1 | 0/? | Not started | - |
