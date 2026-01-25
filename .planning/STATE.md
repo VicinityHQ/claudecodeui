@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-25)
 ## Current Position
 
 Phase: 4 of 6 (Backend Session Lifecycle)
-Plan: 1 of 3 complete
+Plan: 2 of 3 complete
 Status: In progress
-Last activity: 2026-01-25 — Completed 04-01-PLAN.md (Session Lifecycle Infrastructure)
+Last activity: 2026-01-25 — Completed 04-02-PLAN.md (SDK Integration)
 
-Progress: [████░░░░░░] 54% (7/13 total plans complete)
+Progress: [█████░░░░░] 62% (8/13 total plans complete)
 
 ## Previous Milestone: v1.0 Memory Optimization
 
@@ -29,7 +29,7 @@ Progress: [████░░░░░░] 54% (7/13 total plans complete)
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6 (v1.0 milestone)
+- Total plans completed: 8 (6 v1.0 + 2 v1.1)
 - Average duration: N/A
 - Total execution time: N/A
 
@@ -40,6 +40,7 @@ Progress: [████░░░░░░] 54% (7/13 total plans complete)
 | 1 | 3 | N/A | N/A |
 | 2 | 2 | N/A | N/A |
 | 3 | 1 | N/A | N/A |
+| 4 | 2 | ~6min | ~3min |
 
 **Recent Trend:**
 - Last 5 plans: N/A
@@ -62,6 +63,8 @@ Recent decisions affecting current work:
 | Terminal state guard on session transitions | 04-01 | Prevents duplicate error messages |
 | No SDK abort on timeout | 04-01 | Let SDK continue in background; we just stop caring |
 | 5s delayed cleanup after timeout | 04-01 | Allows status queries before session deletion |
+| Pass ws parameter explicitly to setupSessionTimeouts | 04-02 | Avoids circular reference issues |
+| Error categorization for mobile debugging | 04-02 | Helps users debug without DevTools |
 
 ### Known Issues for v1.1
 
@@ -90,7 +93,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-25T21:03:21Z
-Stopped at: Completed 04-01-PLAN.md (Session Lifecycle Infrastructure)
+Last session: 2026-01-25T21:14:00Z
+Stopped at: Completed 04-02-PLAN.md (SDK Integration)
 Resume file: None
-Next: Execute 04-02-PLAN.md
+Next: Execute 04-03-PLAN.md (if exists) or Phase 05
