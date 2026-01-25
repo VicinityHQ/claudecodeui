@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-25)
 ## Current Position
 
 Phase: 5 of 6 (Frontend State Management)
-Plan: 1 of ? (05-01 complete)
-Status: In progress
-Last activity: 2026-01-25 — Completed 05-01-PLAN.md
+Plan: 2 of 2 (Phase complete)
+Status: Phase complete
+Last activity: 2026-01-25 — Completed 05-02-PLAN.md
 
-Progress: [███████░░░] 72% (8.3/12 plans complete)
+Progress: [████████░░] 83% (10/12 plans complete)
 
 ## Previous Milestone: v1.0 Memory Optimization
 
@@ -33,15 +33,15 @@ Progress: [███████░░░] 72% (8.3/12 plans complete)
 | Phase | Plans | Status |
 |-------|-------|--------|
 | 04-backend-session-lifecycle | 2/2 | Complete |
-| 05-frontend-state-management | 1/? | In progress |
+| 05-frontend-state-management | 2/2 | Complete |
 | 06-error-ux | 0/? | Not started |
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9 (6 v1.0 + 3 v1.1)
+- Total plans completed: 10 (6 v1.0 + 4 v1.1)
 - Phase 4 duration: ~6 min (2 plans)
-- Phase 5 current: 1 min (1 plan)
+- Phase 5 duration: ~3 min (2 plans)
 
 **By Phase:**
 
@@ -51,6 +51,7 @@ Progress: [███████░░░] 72% (8.3/12 plans complete)
 | 2 | 2 | N/A | N/A |
 | 3 | 1 | N/A | N/A |
 | 4 | 2 | ~6min | ~3min |
+| 5 | 2 | ~3min | ~1.5min |
 
 ## Accumulated Context
 
@@ -72,14 +73,17 @@ Recent decisions affecting current work:
 | React key prop based on selectedProject.name | 05-01 | Forces ChatInterface remount on project change |
 | Remove localStorage restoration on mount | 05-01 | Clean state guaranteed by React key prop pattern |
 | Keep localStorage persistence for draft saving | 05-01 | Save drafts during use, don't restore on mount |
+| Clear messages only for NEW sessions | 05-02 | Preserve history when resuming, clear when starting fresh |
+| Separate sessionError state | 05-02 | Prevents stuck spinner, enables dismissible error UI |
+| Session switch clears loading state | 05-02 | Sync UI with actual session processing status |
 
 ### Known Issues for v1.1
 
 From user report (2026-01-25):
 
-1. **Stuck sessions**: ✓ ADDRESSED in Phase 4 — 60s inactivity timeout now triggers session failure with structured error
-2. **Message bleeding**: ✓ PARTIALLY ADDRESSED in Phase 5 Plan 01 — ChatInterface remounts on project switch
-3. **Silent failures**: ✓ PARTIALLY ADDRESSED in Phase 4 — Error categorization and timestamps added
+1. **Stuck sessions**: ✓ RESOLVED in Phase 4 & 5 — Timeout triggers errors, error state displays properly (not stuck spinner)
+2. **Message bleeding**: ✓ RESOLVED in Phase 5 — ChatInterface remounts on project switch, clears messages on new session
+3. **Silent failures**: ✓ RESOLVED in Phase 4 & 5 — Error categorization, dismissible error banners, accurate loading state
 
 ### Blockers/Concerns
 
@@ -98,7 +102,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-25T21:35:00Z
-Stopped at: Completed 05-01-PLAN.md
+Last session: 2026-01-25T21:40:51Z
+Stopped at: Completed 05-02-PLAN.md (Phase 5 complete)
 Resume file: —
-Next: Plan 05-02 (Session State Reset within same project)
+Next: Phase 06 (Error UX / Integration Testing)
