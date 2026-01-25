@@ -473,6 +473,7 @@ function MainContent({
           <div className={`h-full ${activeTab === 'chat' ? 'block' : 'hidden'}`}>
             <ErrorBoundary showDetails={true}>
               <ChatInterface
+              key={`project-${selectedProject?.name || 'none'}`}
               selectedProject={selectedProject}
               selectedSession={selectedSession}
               ws={ws}
