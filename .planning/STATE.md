@@ -2,40 +2,29 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-01-24)
+See: .planning/PROJECT.md (updated 2026-01-25)
 
-**Core value:** ClaudeCodeUI must load and display projects of any size without running out of memory
-**Current focus:** Phase 3: UI Size Indicators
+**Core value:** Users must be able to reliably start conversations and receive responses without stuck sessions or message bleeding
+**Current focus:** Defining requirements for milestone v1.1 (Session Reliability)
 
 ## Current Position
 
-Phase: 3 of 3 (UI Size Indicators)
-Plan: 01 of 1 (completed)
-Status: Phase 3 complete — MILESTONE COMPLETE
-Last activity: 2025-01-25 - Completed quick task 001: WebSocket message queuing
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-01-25 — Milestone v1.1 started
 
-Progress: [██████████] 100% (6/6 plans complete)
+Progress: [░░░░░░░░░░] 0%
 
-## Performance Metrics
+## Previous Milestone: v1.0 Memory Optimization
 
-**Velocity:**
-- Total plans completed: 6
-- Average duration: 3.5 min
-- Total execution time: 0.35 hours
+**Completed:** 2026-01-24
 
-**By Phase:**
-
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| 01-file-reading-optimization | 3/3 | 12 min | 4 min |
-| 02-lazy-loading-architecture | 2/2 | 5 min | 2.5 min |
-| 03-ui-size-indicators | 1/1 | 4 min | 4 min |
-
-**Recent Trend:**
-- Last 5 plans: 01-03 (8 min), 02-01 (2 min), 02-02 (3 min), 03-01 (4 min)
-- Trend: Stable
-
-*Updated after each plan completion*
+| Phase | Plans | Status |
+|-------|-------|--------|
+| 01-file-reading-optimization | 3/3 | Complete |
+| 02-lazy-loading-architecture | 2/2 | Complete |
+| 03-ui-size-indicators | 1/1 | Complete |
 
 ## Accumulated Context
 
@@ -46,31 +35,28 @@ Recent decisions affecting current work:
 
 | Decision | Phase | Impact |
 |----------|-------|--------|
-| Use createReadStream with end option for byte-limited reading | 01-01 | Prevents reading entire 600MB files into memory |
-| Read maximum 100KB to find cwd field | 01-01 | Provides safety margin while ensuring metadata is found |
-| Early exit immediately when cwd found | 01-01 | Optimizes performance by avoiding unnecessary line processing |
-| Cache stores source metadata ('file', 'config', 'fallback') | 01-02 | Enables tracking when cwd came from fallback |
-| Add incompleteMetadata flag only when source is 'fallback' | 01-02 | API backward compatible (additive optional field) |
-| Use file mtime as primary timestamp source | 01-03 | Reduces content parsing by using file stats for timestamps |
-| Track timestampSource for debugging | 01-03 | Helps diagnose timestamp-related issues |
-| Use fs.stat for size/mtime without reading file content | 02-01 | Enables metadata extraction without JSONL parsing |
-| Batch stat operations at 50 files | 02-01 | Prevents EMFILE errors in large directories |
-| Return empty sessions arrays for lazy loading | 02-01 | Sessions loaded separately via dedicated endpoint |
-| Use getProjectsMinimal for /api/projects endpoint and file watcher | 02-02 | API returns minimal data, sessions fetched on-demand |
-| Store loaded sessions in separate state from additional sessions | 02-02 | Clean separation between expansion fetch and "show more" |
-| Display project.sessionCount and totalSizeBytes before sessions load | 02-02 | Users see project size at a glance before expanding |
-| Sessions from same file share the file's total size | 03-01 | Approximation acceptable for visibility goals |
-| Size only displays when sizeBytes > 0 | 03-01 | Handles undefined/null gracefully |
-| Queue messages during WebSocket disconnection | quick-001 | Prevents silent message drops, improves reliability |
-| Limit message queue to 100 messages | quick-001 | Prevents memory issues during extended disconnection |
+| Queue messages during WebSocket disconnect | quick-001 | Prevents silent message drops |
+| Detect completed sessions before resume | quick-001 | Prevents SDK replay causing token overflow |
+| SessionId on all WebSocket messages | quick-001 | Enables cross-session filtering |
+
+### Known Issues for v1.1
+
+From user report (2026-01-25):
+
+1. **Stuck sessions**: SDK streams messages (same session ID) but never completes. Server logs show repeated "No session_id in message or already captured" but no `claude-complete`. UI shows spinning counter indefinitely.
+
+2. **Message bleeding**: Switching to new project shows message from previous failed attempt. Frontend state not cleared on project switch.
+
+3. **Silent failures**: When sessions fail to start, no clear error feedback. User only sees counter running.
+
+### Blockers/Concerns
+
+- Primary usage is mobile (no DevTools access for debugging)
+- sqlite3 native module has architecture compatibility issues on local dev (pre-existing, unrelated)
 
 ### Pending Todos
 
 None yet.
-
-### Blockers/Concerns
-
-- sqlite3 native module has architecture compatibility issues on local development machine (pre-existing issue, unrelated to optimization work)
 
 ### Quick Tasks Completed
 
@@ -80,7 +66,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-25T09:38:59Z
-Stopped at: Completed quick-001-PLAN.md (WebSocket message queuing)
-Resume file: .planning/quick/001-investigate-ui-backend-messaging/001-SUMMARY.md
-Next: All phases complete - quick tasks as needed
+Last session: 2026-01-25T10:00:00Z
+Stopped at: Starting milestone v1.1 (Session Reliability)
+Resume file: —
+Next: Define requirements, then create roadmap
