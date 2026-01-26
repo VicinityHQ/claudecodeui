@@ -5058,11 +5058,17 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
         )}
 
         {sessionError && !isLoading && (
-          <div className="text-center py-2 px-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg mb-2">
+          <div
+            role="alert"
+            aria-live="assertive"
+            aria-atomic="true"
+            className="text-center py-2 px-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg mb-2 transition-opacity duration-300 motion-reduce:transition-none"
+          >
             <p className="text-red-600 dark:text-red-400 text-sm">{sessionError}</p>
             <button
               onClick={() => setSessionError(null)}
               className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-300 mt-1"
+              aria-label="Dismiss error message"
             >
               Dismiss
             </button>
