@@ -24,9 +24,9 @@ Requirements for session reliability milestone.
 
 ### Error Handling
 
-- [ ] **ERR-01**: Timeout displays clear error after 60 seconds of no SDK activity
+- [x] **ERR-01**: Timeout displays clear error after 60 seconds of no SDK activity
 - [x] **ERR-02**: SDK errors surface to UI with meaningful message
-- [ ] **ERR-03**: WebSocket disconnect shows reconnection status indicator
+- [x] **ERR-03**: WebSocket disconnect shows reconnection status indicator
 
 ## v2 Requirements
 
@@ -61,8 +61,8 @@ Deferred to future milestone.
 | UI-03 | Phase 5 | Complete |
 | UI-04 | Phase 5 | Complete |
 | UI-05 | Phase 5 | Complete |
-| ERR-01 | Phase 6 | Pending |
-| ERR-03 | Phase 6 | Pending |
+| ERR-01 | Phase 6 | Complete |
+| ERR-03 | Phase 6 | Complete |
 
 **Coverage:**
 - v1.1 requirements: 12 total
@@ -73,4 +73,4 @@ Deferred to future milestone.
 
 ---
 *Requirements defined: 2026-01-25*
-*Last updated: 2026-01-25 after roadmap creation*
+*Last updated: 2026-01-26 after Phase 6 completion*

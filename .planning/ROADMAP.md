@@ -105,7 +105,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 06-01-PLAN.md — Accessible error banner and WebSocket connection status badge
+- [x] 06-01-PLAN.md — Accessible error banner and WebSocket connection status badge
 
 ## Progress
 
@@ -119,4 +119,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 3. UI Size Indicators | v1.0 | 1/1 | Complete | 2026-01-24 |
 | 4. Backend Session Lifecycle | v1.1 | 2/2 | Complete | 2026-01-25 |
 | 5. Frontend State Management | v1.1 | 2/2 | Complete | 2026-01-25 |
-| 6. Error UX | v1.1 | 0/1 | Not started | - |
+| 6. Error UX | v1.1 | 1/1 | Complete | 2026-01-26 |
