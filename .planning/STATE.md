@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-01-25)
 
 ## Current Position
 
-Phase: 5 of 6 (Frontend State Management)
-Plan: 2 of 2 (Phase complete)
+Phase: 6 of 6 (Error UX)
+Plan: 1 of 1 (Phase complete)
 Status: Phase complete
-Last activity: 2026-01-25 — Completed 05-02-PLAN.md
+Last activity: 2026-01-26 — Completed 06-01-PLAN.md
 
-Progress: [████████░░] 83% (10/12 plans complete)
+Progress: [██████████] 100% (11/11 plans complete)
 
 ## Previous Milestone: v1.0 Memory Optimization
 
@@ -28,20 +28,21 @@ Progress: [████████░░] 83% (10/12 plans complete)
 
 ## Current Milestone: v1.1 Session Reliability
 
-**In Progress**
+**Completed:** 2026-01-26
 
 | Phase | Plans | Status |
 |-------|-------|--------|
 | 04-backend-session-lifecycle | 2/2 | Complete |
 | 05-frontend-state-management | 2/2 | Complete |
-| 06-error-ux | 0/? | Not started |
+| 06-error-ux | 1/1 | Complete |
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10 (6 v1.0 + 4 v1.1)
+- Total plans completed: 11 (6 v1.0 + 5 v1.1)
 - Phase 4 duration: ~6 min (2 plans)
 - Phase 5 duration: ~3 min (2 plans)
+- Phase 6 duration: ~2.5 min (1 plan)
 
 **By Phase:**
 
@@ -52,6 +53,7 @@ Progress: [████████░░] 83% (10/12 plans complete)
 | 3 | 1 | N/A | N/A |
 | 4 | 2 | ~6min | ~3min |
 | 5 | 2 | ~3min | ~1.5min |
+| 6 | 1 | ~2.5min | ~2.5min |
 
 ## Accumulated Context
 
@@ -76,6 +78,10 @@ Recent decisions affecting current work:
 | Clear messages only for NEW sessions | 05-02 | Preserve history when resuming, clear when starting fresh |
 | Separate sessionError state | 05-02 | Prevents stuck spinner, enables dismissible error UI |
 | Session switch clears loading state | 05-02 | Sync UI with actual session processing status |
+| ARIA assertive for timeout errors | 06-01 | Critical errors need immediate screen reader announcement |
+| ARIA polite for connection status | 06-01 | Non-blocking status updates don't interrupt user |
+| Connection badge only shows when disconnected | 06-01 | Avoid UI clutter during normal operation |
+| Yellow color for reconnection indicator | 06-01 | Reconnection is expected/recoverable, not a failure |
 
 ### Known Issues for v1.1
 
@@ -102,7 +108,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-25T21:40:51Z
-Stopped at: Completed 05-02-PLAN.md (Phase 5 complete)
+Last session: 2026-01-26T10:26:35Z
+Stopped at: Completed 06-01-PLAN.md (Milestone v1.1 Session Reliability complete)
 Resume file: —
-Next: Phase 06 (Error UX / Integration Testing)
+Next: Ready for user verification and integration testing
