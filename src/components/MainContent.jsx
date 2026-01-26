@@ -14,6 +14,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import ChatInterface from './ChatInterface';
+import ConnectionStatusBadge from './ConnectionStatusBadge';
 import FileTree from './FileTree';
 import CodeEditor from './CodeEditor';
 import StandaloneShell from './StandaloneShell';
@@ -470,7 +471,10 @@ function MainContent({
       <div className="flex-1 flex min-h-0 overflow-hidden">
         {/* Main Content */}
         <div className={`flex-1 flex flex-col min-h-0 overflow-hidden ${editingFile ? 'mr-0' : ''} ${editorExpanded ? 'hidden' : ''}`}>
-          <div className={`h-full ${activeTab === 'chat' ? 'block' : 'hidden'}`}>
+          <div className={`h-full ${activeTab === 'chat' ? 'flex flex-col' : 'hidden'}`}>
+            <div className="px-4 pt-2">
+              <ConnectionStatusBadge />
+            </div>
             <ErrorBoundary showDetails={true}>
               <ChatInterface
               key={`project-${selectedProject?.name || 'none'}`}
