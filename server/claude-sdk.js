@@ -12,30 +12,34 @@
  * - WebSocket message streaming
  */
 
-import { query } from '@anthropic-ai/claude-agent-sdk';
+import { query } from "@anthropic-ai/claude-agent-sdk";
 // Used to mint unique approval request IDs when randomUUID is not available.
 // This keeps parallel tool approvals from colliding; it does not add any crypto/security guarantees.
-import crypto from 'crypto';
-import { promises as fs } from 'fs';
-import path from 'path';
-import os from 'os';
-import { CLAUDE_MODELS } from '../shared/modelConstants.js';
+import crypto from "crypto";
+import { promises as fs } from "fs";
+import path from "path";
+import os from "os";
+import { CLAUDE_MODELS } from "../shared/modelConstants.js";
 
 // Session status constants for lifecycle tracking
 const SessionStatus = {
-  PENDING: 'pending',    // Session created, waiting for first SDK message
-  ACTIVE: 'active',      // SDK streaming messages
-  COMPLETE: 'complete',  // SDK generator finished naturally
-  ERROR: 'error',        // SDK threw exception
-  TIMEOUT: 'timeout'     // Timeout fired - inactivity or max duration
+  PENDING: "pending", // Session created, waiting for first SDK message
+  ACTIVE: "active", // SDK streaming messages
+  COMPLETE: "complete", // SDK generator finished naturally
+  ERROR: "error", // SDK threw exception
+  TIMEOUT: "timeout", // Timeout fired - inactivity or max duration
 };
 
 // Terminal states that cannot transition to other states
-const TERMINAL_STATES = [SessionStatus.COMPLETE, SessionStatus.ERROR, SessionStatus.TIMEOUT];
+const TERMINAL_STATES = [
+  SessionStatus.COMPLETE,
+  SessionStatus.ERROR,
+  SessionStatus.TIMEOUT,
+];
 
 // Timeout constants for session lifecycle management
-const INACTIVITY_TIMEOUT_MS = 60_000;  // 60 seconds - no SDK messages
-const MAX_DURATION_MS = 600_000;       // 10 minutes - absolute maximum session length
+const INACTIVITY_TIMEOUT_MS = 60_000; // 60 seconds - no SDK messages
+const MAX_DURATION_MS = 600_000; // 10 minutes - absolute maximum session length
 
 /**
  * Transitions a session to a new status with validation
@@ -55,7 +59,9 @@ function transitionSessionState(sessionId, newStatus) {
 
   // Prevent transitions from terminal states
   if (TERMINAL_STATES.includes(oldStatus)) {
-    console.warn(`Cannot transition session ${sessionId} from terminal state ${oldStatus} to ${newStatus}`);
+    console.warn(
+      `Cannot transition session ${sessionId} from terminal state ${oldStatus} to ${newStatus}`,
+    );
     return false;
   }
 
@@ -107,12 +113,22 @@ function setupSessionTimeouts(sessionId, session, ws) {
 
   // Set inactivity timeout (resets on each message)
   session.inactivityTimer = setTimeout(() => {
-    handleSessionTimeout(sessionId, 'inactivity', 'No SDK activity for 60 seconds', ws);
+    handleSessionTimeout(
+      sessionId,
+      "inactivity",
+      "No SDK activity for 60 seconds",
+      ws,
+    );
   }, INACTIVITY_TIMEOUT_MS);
 
   // Set max duration timeout (never resets)
   session.maxDurationTimer = setTimeout(() => {
-    handleSessionTimeout(sessionId, 'max_duration', 'Session exceeded 10 minute maximum duration', ws);
+    handleSessionTimeout(
+      sessionId,
+      "max_duration",
+      "Session exceeded 10 minute maximum duration",
+      ws,
+    );
   }, MAX_DURATION_MS);
 
   // Record timestamps and WebSocket reference
@@ -120,7 +136,9 @@ function setupSessionTimeouts(sessionId, session, ws) {
   session.lastActivity = Date.now();
   session.ws = ws;
 
-  console.log(`Timeouts armed for session ${sessionId}: inactivity=60s, max=10m`);
+  console.log(
+    `Timeouts armed for session ${sessionId}: inactivity=60s, max=10m`,
+  );
 }
 
 /**
@@ -135,7 +153,9 @@ function resetInactivityTimer(sessionId) {
     return;
   }
 
-  console.log(`[SESSION] Activity detected for ${sessionId}, resetting inactivity timer`);
+  console.log(
+    `[SESSION] Activity detected for ${sessionId}, resetting inactivity timer`,
+  );
 
   // Clear existing inactivity timer
   if (session.inactivityTimer) {
@@ -144,7 +164,12 @@ function resetInactivityTimer(sessionId) {
 
   // Set new inactivity timeout
   session.inactivityTimer = setTimeout(() => {
-    handleSessionTimeout(sessionId, 'inactivity', 'No SDK activity for 60 seconds', session.ws);
+    handleSessionTimeout(
+      sessionId,
+      "inactivity",
+      "No SDK activity for 60 seconds",
+      session.ws,
+    );
   }, INACTIVITY_TIMEOUT_MS);
 
   // Update last activity timestamp
@@ -168,8 +193,13 @@ function handleSessionTimeout(sessionId, reason, message, ws) {
 
   // Guard against race condition - don't send duplicate errors
   // if session already completed or errored
-  if (session.status === SessionStatus.COMPLETE || session.status === SessionStatus.ERROR) {
-    console.log(`Session ${sessionId} timeout skipped: already in ${session.status} state`);
+  if (
+    session.status === SessionStatus.COMPLETE ||
+    session.status === SessionStatus.ERROR
+  ) {
+    console.log(
+      `Session ${sessionId} timeout skipped: already in ${session.status} state`,
+    );
     return;
   }
 
@@ -180,15 +210,17 @@ function handleSessionTimeout(sessionId, reason, message, ws) {
 
   // Send structured error to WebSocket if connection is open
   if (ws && ws.readyState === 1) {
-    ws.send(JSON.stringify({
-      type: 'claude-error',
-      error: message,
-      sessionId: sessionId,
-      timeout: true,
-      reason: reason,
-      timestamp: new Date().toISOString(),
-      category: 'timeout'
-    }));
+    ws.send(
+      JSON.stringify({
+        type: "claude-error",
+        error: message,
+        sessionId: sessionId,
+        timeout: true,
+        reason: reason,
+        timestamp: new Date().toISOString(),
+        category: "timeout",
+      }),
+    );
   }
 
   // Clear both timers
@@ -216,17 +248,18 @@ const pendingToolApprovals = new Map();
 // Default approval timeout kept under the SDK's 60s control timeout.
 // This does not change SDK limits; it only defines how long we wait for the UI,
 // introduced to avoid hanging the run when no decision arrives.
-const TOOL_APPROVAL_TIMEOUT_MS = parseInt(process.env.CLAUDE_TOOL_APPROVAL_TIMEOUT_MS, 10) || 55000;
+const TOOL_APPROVAL_TIMEOUT_MS =
+  parseInt(process.env.CLAUDE_TOOL_APPROVAL_TIMEOUT_MS, 10) || 55000;
 
 // Generate a stable request ID for UI approval flows.
 // This does not encode tool details or get shown to users; it exists so the UI
 // can respond to the correct pending request without collisions.
 function createRequestId() {
   // if clause is used because randomUUID is not available in older Node.js versions
-  if (typeof crypto.randomUUID === 'function') {
+  if (typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
   }
-  return crypto.randomBytes(16).toString('hex');
+  return crypto.randomBytes(16).toString("hex");
 }
 
 // Wait for a UI approval decision, honoring SDK cancellation.
@@ -236,7 +269,7 @@ function createRequestId() {
 function waitForToolApproval(requestId, options = {}) {
   const { timeoutMs = TOOL_APPROVAL_TIMEOUT_MS, signal, onCancel } = options;
 
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     let settled = false;
 
     const finalize = (decision) => {
@@ -250,31 +283,31 @@ function waitForToolApproval(requestId, options = {}) {
       pendingToolApprovals.delete(requestId);
       clearTimeout(timeout);
       if (signal && abortHandler) {
-        signal.removeEventListener('abort', abortHandler);
+        signal.removeEventListener("abort", abortHandler);
       }
     };
 
     // Timeout is local to this process; it does not override SDK timing.
     // It exists to prevent the UI prompt from lingering indefinitely.
     const timeout = setTimeout(() => {
-      onCancel?.('timeout');
+      onCancel?.("timeout");
       finalize(null);
     }, timeoutMs);
 
     const abortHandler = () => {
       // If the SDK cancels the control request, stop waiting to avoid
       // replying after the process is no longer ready for writes.
-      onCancel?.('cancelled');
+      onCancel?.("cancelled");
       finalize({ cancelled: true });
     };
 
     if (signal) {
       if (signal.aborted) {
-        onCancel?.('cancelled');
+        onCancel?.("cancelled");
         finalize({ cancelled: true });
         return;
       }
-      signal.addEventListener('abort', abortHandler, { once: true });
+      signal.addEventListener("abort", abortHandler, { once: true });
     }
 
     pendingToolApprovals.set(requestId, (decision) => {
@@ -307,13 +340,17 @@ function matchesToolPermission(entry, toolName, input) {
   }
 
   const bashMatch = entry.match(/^Bash\((.+):\*\)$/);
-  if (toolName === 'Bash' && bashMatch) {
+  if (toolName === "Bash" && bashMatch) {
     const allowedPrefix = bashMatch[1];
-    let command = '';
+    let command = "";
 
-    if (typeof input === 'string') {
+    if (typeof input === "string") {
       command = input.trim();
-    } else if (input && typeof input === 'object' && typeof input.command === 'string') {
+    } else if (
+      input &&
+      typeof input === "object" &&
+      typeof input.command === "string"
+    ) {
       command = input.command.trim();
     }
 
@@ -343,7 +380,7 @@ function mapCliOptionsToSDK(options = {}) {
   }
 
   // Map permission mode
-  if (permissionMode && permissionMode !== 'default') {
+  if (permissionMode && permissionMode !== "default") {
     sdkOptions.permissionMode = permissionMode;
   }
 
@@ -351,13 +388,13 @@ function mapCliOptionsToSDK(options = {}) {
   const settings = toolsSettings || {
     allowedTools: [],
     disallowedTools: [],
-    skipPermissions: false
+    skipPermissions: false,
   };
 
   // Handle tool permissions
-  if (settings.skipPermissions && permissionMode !== 'plan') {
+  if (settings.skipPermissions && permissionMode !== "plan") {
     // When skipping permissions, use bypassPermissions mode
-    sdkOptions.permissionMode = 'bypassPermissions';
+    sdkOptions.permissionMode = "bypassPermissions";
   }
 
   // Map allowed tools (always set to avoid implicit "allow all" defaults).
@@ -366,8 +403,16 @@ function mapCliOptionsToSDK(options = {}) {
   let allowedTools = [...(settings.allowedTools || [])];
 
   // Add plan mode default tools
-  if (permissionMode === 'plan') {
-    const planModeTools = ['Read', 'Task', 'exit_plan_mode', 'TodoRead', 'TodoWrite', 'WebFetch', 'WebSearch'];
+  if (permissionMode === "plan") {
+    const planModeTools = [
+      "Read",
+      "Task",
+      "exit_plan_mode",
+      "TodoRead",
+      "TodoWrite",
+      "WebFetch",
+      "WebSearch",
+    ];
     for (const tool of planModeTools) {
       if (!allowedTools.includes(tool)) {
         allowedTools.push(tool);
@@ -388,13 +433,13 @@ function mapCliOptionsToSDK(options = {}) {
 
   // Map system prompt configuration
   sdkOptions.systemPrompt = {
-    type: 'preset',
-    preset: 'claude_code'  // Required to use CLAUDE.md
+    type: "preset",
+    preset: "claude_code", // Required to use CLAUDE.md
   };
 
   // Map setting sources for CLAUDE.md loading
   // This loads CLAUDE.md from project, user (~/.config/claude/CLAUDE.md), and local directories
-  sdkOptions.settingSources = ['project', 'user', 'local'];
+  sdkOptions.settingSources = ["project", "user", "local"];
 
   // Map resume session
   if (sessionId) {
@@ -411,7 +456,12 @@ function mapCliOptionsToSDK(options = {}) {
  * @param {Array<string>} tempImagePaths - Temp image file paths for cleanup
  * @param {string} tempDir - Temp directory for cleanup
  */
-function addSession(sessionId, queryInstance, tempImagePaths = [], tempDir = null) {
+function addSession(
+  sessionId,
+  queryInstance,
+  tempImagePaths = [],
+  tempDir = null,
+) {
   activeSessions.set(sessionId, {
     instance: queryInstance,
     startTime: Date.now(),
@@ -421,7 +471,7 @@ function addSession(sessionId, queryInstance, tempImagePaths = [], tempDir = nul
     lastActivity: Date.now(),
     inactivityTimer: null,
     maxDurationTimer: null,
-    ws: null
+    ws: null,
   });
 }
 
@@ -468,7 +518,7 @@ function transformMessage(sdkMessage) {
  * @returns {Object|null} Token budget object or null
  */
 function extractTokenBudget(resultMessage) {
-  if (resultMessage.type !== 'result' || !resultMessage.modelUsage) {
+  if (resultMessage.type !== "result" || !resultMessage.modelUsage) {
     return null;
   }
 
@@ -482,23 +532,34 @@ function extractTokenBudget(resultMessage) {
 
   // Use cumulative tokens if available (tracks total for the session)
   // Otherwise fall back to per-request tokens
-  const inputTokens = modelData.cumulativeInputTokens || modelData.inputTokens || 0;
-  const outputTokens = modelData.cumulativeOutputTokens || modelData.outputTokens || 0;
-  const cacheReadTokens = modelData.cumulativeCacheReadInputTokens || modelData.cacheReadInputTokens || 0;
-  const cacheCreationTokens = modelData.cumulativeCacheCreationInputTokens || modelData.cacheCreationInputTokens || 0;
+  const inputTokens =
+    modelData.cumulativeInputTokens || modelData.inputTokens || 0;
+  const outputTokens =
+    modelData.cumulativeOutputTokens || modelData.outputTokens || 0;
+  const cacheReadTokens =
+    modelData.cumulativeCacheReadInputTokens ||
+    modelData.cacheReadInputTokens ||
+    0;
+  const cacheCreationTokens =
+    modelData.cumulativeCacheCreationInputTokens ||
+    modelData.cacheCreationInputTokens ||
+    0;
 
   // Total used = input + output + cache tokens
-  const totalUsed = inputTokens + outputTokens + cacheReadTokens + cacheCreationTokens;
+  const totalUsed =
+    inputTokens + outputTokens + cacheReadTokens + cacheCreationTokens;
 
   // Use configured context window budget from environment (default 160000)
   // This is the user's budget limit, not the model's context window
   const contextWindow = parseInt(process.env.CONTEXT_WINDOW) || 160000;
 
-  console.log(`Token calculation: input=${inputTokens}, output=${outputTokens}, cache=${cacheReadTokens + cacheCreationTokens}, total=${totalUsed}/${contextWindow}`);
+  console.log(
+    `Token calculation: input=${inputTokens}, output=${outputTokens}, cache=${cacheReadTokens + cacheCreationTokens}, total=${totalUsed}/${contextWindow}`,
+  );
 
   return {
     used: totalUsed,
-    total: contextWindow
+    total: contextWindow,
   };
 }
 
@@ -521,7 +582,7 @@ async function handleImages(command, images, cwd) {
   try {
     // Create temp directory in the project directory
     const workingDir = cwd || process.cwd();
-    tempDir = path.join(workingDir, '.tmp', 'images', Date.now().toString());
+    tempDir = path.join(workingDir, ".tmp", "images", Date.now().toString());
     await fs.mkdir(tempDir, { recursive: true });
 
     // Save each image to a temp file
@@ -529,31 +590,33 @@ async function handleImages(command, images, cwd) {
       // Extract base64 data and mime type
       const matches = image.data.match(/^data:([^;]+);base64,(.+)$/);
       if (!matches) {
-        console.error('Invalid image data format');
+        console.error("Invalid image data format");
         continue;
       }
 
       const [, mimeType, base64Data] = matches;
-      const extension = mimeType.split('/')[1] || 'png';
+      const extension = mimeType.split("/")[1] || "png";
       const filename = `image_${index}.${extension}`;
       const filepath = path.join(tempDir, filename);
 
       // Write base64 data to file
-      await fs.writeFile(filepath, Buffer.from(base64Data, 'base64'));
+      await fs.writeFile(filepath, Buffer.from(base64Data, "base64"));
       tempImagePaths.push(filepath);
     }
 
     // Include the full image paths in the prompt
     let modifiedCommand = command;
     if (tempImagePaths.length > 0 && command && command.trim()) {
-      const imageNote = `\n\n[Images provided at the following paths:]\n${tempImagePaths.map((p, i) => `${i + 1}. ${p}`).join('\n')}`;
+      const imageNote = `\n\n[Images provided at the following paths:]\n${tempImagePaths.map((p, i) => `${i + 1}. ${p}`).join("\n")}`;
       modifiedCommand = command + imageNote;
     }
 
-    console.log(`Processed ${tempImagePaths.length} images to temp directory: ${tempDir}`);
+    console.log(
+      `Processed ${tempImagePaths.length} images to temp directory: ${tempDir}`,
+    );
     return { modifiedCommand, tempImagePaths, tempDir };
   } catch (error) {
-    console.error('Error processing images for SDK:', error);
+    console.error("Error processing images for SDK:", error);
     return { modifiedCommand: command, tempImagePaths, tempDir };
   }
 }
@@ -571,21 +634,25 @@ async function cleanupTempFiles(tempImagePaths, tempDir) {
   try {
     // Delete individual temp files
     for (const imagePath of tempImagePaths) {
-      await fs.unlink(imagePath).catch(err =>
-        console.error(`Failed to delete temp image ${imagePath}:`, err)
-      );
+      await fs
+        .unlink(imagePath)
+        .catch((err) =>
+          console.error(`Failed to delete temp image ${imagePath}:`, err),
+        );
     }
 
     // Delete temp directory
     if (tempDir) {
-      await fs.rm(tempDir, { recursive: true, force: true }).catch(err =>
-        console.error(`Failed to delete temp directory ${tempDir}:`, err)
-      );
+      await fs
+        .rm(tempDir, { recursive: true, force: true })
+        .catch((err) =>
+          console.error(`Failed to delete temp directory ${tempDir}:`, err),
+        );
     }
 
     console.log(`Cleaned up ${tempImagePaths.length} temp image files`);
   } catch (error) {
-    console.error('Error during temp file cleanup:', error);
+    console.error("Error during temp file cleanup:", error);
   }
 }
 
@@ -596,24 +663,24 @@ async function cleanupTempFiles(tempImagePaths, tempDir) {
  */
 async function loadMcpConfig(cwd) {
   try {
-    const claudeConfigPath = path.join(os.homedir(), '.claude.json');
+    const claudeConfigPath = path.join(os.homedir(), ".claude.json");
 
     // Check if config file exists
     try {
       await fs.access(claudeConfigPath);
     } catch (error) {
       // File doesn't exist, return null
-      console.log('No ~/.claude.json found, proceeding without MCP servers');
+      console.log("No ~/.claude.json found, proceeding without MCP servers");
       return null;
     }
 
     // Read and parse config file
     let claudeConfig;
     try {
-      const configContent = await fs.readFile(claudeConfigPath, 'utf8');
+      const configContent = await fs.readFile(claudeConfigPath, "utf8");
       claudeConfig = JSON.parse(configContent);
     } catch (error) {
-      console.error('Failed to parse ~/.claude.json:', error.message);
+      console.error("Failed to parse ~/.claude.json:", error.message);
       return null;
     }
 
@@ -621,30 +688,41 @@ async function loadMcpConfig(cwd) {
     let mcpServers = {};
 
     // Add global MCP servers
-    if (claudeConfig.mcpServers && typeof claudeConfig.mcpServers === 'object') {
+    if (
+      claudeConfig.mcpServers &&
+      typeof claudeConfig.mcpServers === "object"
+    ) {
       mcpServers = { ...claudeConfig.mcpServers };
-      console.log(`Loaded ${Object.keys(mcpServers).length} global MCP servers`);
+      console.log(
+        `Loaded ${Object.keys(mcpServers).length} global MCP servers`,
+      );
     }
 
     // Add/override with project-specific MCP servers
     if (claudeConfig.claudeProjects && cwd) {
       const projectConfig = claudeConfig.claudeProjects[cwd];
-      if (projectConfig && projectConfig.mcpServers && typeof projectConfig.mcpServers === 'object') {
+      if (
+        projectConfig &&
+        projectConfig.mcpServers &&
+        typeof projectConfig.mcpServers === "object"
+      ) {
         mcpServers = { ...mcpServers, ...projectConfig.mcpServers };
-        console.log(`Loaded ${Object.keys(projectConfig.mcpServers).length} project-specific MCP servers`);
+        console.log(
+          `Loaded ${Object.keys(projectConfig.mcpServers).length} project-specific MCP servers`,
+        );
       }
     }
 
     // Return null if no servers found
     if (Object.keys(mcpServers).length === 0) {
-      console.log('No MCP servers configured');
+      console.log("No MCP servers configured");
       return null;
     }
 
     console.log(`Total MCP servers loaded: ${Object.keys(mcpServers).length}`);
     return mcpServers;
   } catch (error) {
-    console.error('Error loading MCP config:', error.message);
+    console.error("Error loading MCP config:", error.message);
     return null;
   }
 }
@@ -656,13 +734,24 @@ async function loadMcpConfig(cwd) {
  * @returns {string} Error category for UI display
  */
 function categorizeError(error) {
-  const msg = error.message?.toLowerCase() || '';
-  if (msg.includes('timeout')) return 'timeout';
-  if (msg.includes('network') || msg.includes('econnrefused') || msg.includes('enotfound')) return 'network';
-  if (msg.includes('auth') || msg.includes('unauthorized') || msg.includes('forbidden')) return 'auth';
-  if (msg.includes('rate limit') || msg.includes('too many')) return 'rate_limit';
-  if (msg.includes('abort') || msg.includes('interrupt')) return 'aborted';
-  return 'sdk_error';
+  const msg = error.message?.toLowerCase() || "";
+  if (msg.includes("timeout")) return "timeout";
+  if (
+    msg.includes("network") ||
+    msg.includes("econnrefused") ||
+    msg.includes("enotfound")
+  )
+    return "network";
+  if (
+    msg.includes("auth") ||
+    msg.includes("unauthorized") ||
+    msg.includes("forbidden")
+  )
+    return "auth";
+  if (msg.includes("rate limit") || msg.includes("too many"))
+    return "rate_limit";
+  if (msg.includes("abort") || msg.includes("interrupt")) return "aborted";
+  return "sdk_error";
 }
 
 /**
@@ -686,13 +775,17 @@ async function queryClaudeSDK(command, options = {}, ws) {
   const effectiveSessionId = isCompletedSession ? null : sessionId;
 
   if (isCompletedSession) {
-    console.log(`Session ${sessionId} is completed. Starting new session for this message.`);
+    console.log(
+      `Session ${sessionId} is completed. Starting new session for this message.`,
+    );
   }
 
   try {
     // Map CLI options to SDK format
     // If session is completed, don't pass sessionId to SDK (prevent resume attempt)
-    const sdkOptions = mapCliOptionsToSDK(isCompletedSession ? { ...options, sessionId: undefined } : options);
+    const sdkOptions = mapCliOptionsToSDK(
+      isCompletedSession ? { ...options, sessionId: undefined } : options,
+    );
 
     // Load MCP configuration
     const mcpServers = await loadMcpConfig(options.cwd);
@@ -701,7 +794,11 @@ async function queryClaudeSDK(command, options = {}, ws) {
     }
 
     // Handle images - save to temp files and modify prompt
-    const imageResult = await handleImages(command, options.images, options.cwd);
+    const imageResult = await handleImages(
+      command,
+      options.images,
+      options.cwd,
+    );
     const finalCommand = imageResult.modifiedCommand;
     tempImagePaths = imageResult.tempImagePaths;
     tempDir = imageResult.tempDir;
@@ -711,31 +808,31 @@ async function queryClaudeSDK(command, options = {}, ws) {
     // via WebSocket and waits for the response, introduced so tool calls pause
     // instead of auto-running when the allowlist is empty.
     sdkOptions.canUseTool = async (toolName, input, context) => {
-      if (sdkOptions.permissionMode === 'bypassPermissions') {
-        return { behavior: 'allow', updatedInput: input };
+      if (sdkOptions.permissionMode === "bypassPermissions") {
+        return { behavior: "allow", updatedInput: input };
       }
 
-      const isDisallowed = (sdkOptions.disallowedTools || []).some(entry =>
-        matchesToolPermission(entry, toolName, input)
+      const isDisallowed = (sdkOptions.disallowedTools || []).some((entry) =>
+        matchesToolPermission(entry, toolName, input),
       );
       if (isDisallowed) {
-        return { behavior: 'deny', message: 'Tool disallowed by settings' };
+        return { behavior: "deny", message: "Tool disallowed by settings" };
       }
 
-      const isAllowed = (sdkOptions.allowedTools || []).some(entry =>
-        matchesToolPermission(entry, toolName, input)
+      const isAllowed = (sdkOptions.allowedTools || []).some((entry) =>
+        matchesToolPermission(entry, toolName, input),
       );
       if (isAllowed) {
-        return { behavior: 'allow', updatedInput: input };
+        return { behavior: "allow", updatedInput: input };
       }
 
       const requestId = createRequestId();
       ws.send({
-        type: 'claude-permission-request',
+        type: "claude-permission-request",
         requestId,
         toolName,
         input,
-        sessionId: capturedSessionId || effectiveSessionId || null
+        sessionId: capturedSessionId || effectiveSessionId || null,
       });
 
       // Wait for the UI; if the SDK cancels, notify the UI so it can dismiss the banner.
@@ -744,63 +841,84 @@ async function queryClaudeSDK(command, options = {}, ws) {
         signal: context?.signal,
         onCancel: (reason) => {
           ws.send({
-            type: 'claude-permission-cancelled',
+            type: "claude-permission-cancelled",
             requestId,
             reason,
-            sessionId: capturedSessionId || effectiveSessionId || null
+            sessionId: capturedSessionId || effectiveSessionId || null,
           });
-        }
+        },
       });
       if (!decision) {
-        return { behavior: 'deny', message: 'Permission request timed out' };
+        return { behavior: "deny", message: "Permission request timed out" };
       }
 
       if (decision.cancelled) {
-        return { behavior: 'deny', message: 'Permission request cancelled' };
+        return { behavior: "deny", message: "Permission request cancelled" };
       }
 
       if (decision.allow) {
         // rememberEntry only updates this run's in-memory allowlist to prevent
         // repeated prompts in the same session; persistence is handled by the UI.
-        if (decision.rememberEntry && typeof decision.rememberEntry === 'string') {
+        if (
+          decision.rememberEntry &&
+          typeof decision.rememberEntry === "string"
+        ) {
           if (!sdkOptions.allowedTools.includes(decision.rememberEntry)) {
             sdkOptions.allowedTools.push(decision.rememberEntry);
           }
           if (Array.isArray(sdkOptions.disallowedTools)) {
-            sdkOptions.disallowedTools = sdkOptions.disallowedTools.filter(entry => entry !== decision.rememberEntry);
+            sdkOptions.disallowedTools = sdkOptions.disallowedTools.filter(
+              (entry) => entry !== decision.rememberEntry,
+            );
           }
         }
-        return { behavior: 'allow', updatedInput: decision.updatedInput ?? input };
+        return {
+          behavior: "allow",
+          updatedInput: decision.updatedInput ?? input,
+        };
       }
 
-      return { behavior: 'deny', message: decision.message ?? 'User denied tool use' };
+      return {
+        behavior: "deny",
+        message: decision.message ?? "User denied tool use",
+      };
     };
 
     // Create SDK query instance
     const queryInstance = query({
       prompt: finalCommand,
-      options: sdkOptions
+      options: sdkOptions,
     });
 
     // Track the query instance for abort capability
     if (capturedSessionId) {
       addSession(capturedSessionId, queryInstance, tempImagePaths, tempDir);
-      setupSessionTimeouts(capturedSessionId, activeSessions.get(capturedSessionId), ws);
+      setupSessionTimeouts(
+        capturedSessionId,
+        activeSessions.get(capturedSessionId),
+        ws,
+      );
     }
 
     // Process streaming messages
-    console.log('Starting async generator loop for session:', capturedSessionId || 'NEW');
+    console.log(
+      "Starting async generator loop for session:",
+      capturedSessionId || "NEW",
+    );
     for await (const message of queryInstance) {
       // Capture session ID from first message
       if (message.session_id && !capturedSessionId) {
-
         capturedSessionId = message.session_id;
         addSession(capturedSessionId, queryInstance, tempImagePaths, tempDir);
-        setupSessionTimeouts(capturedSessionId, activeSessions.get(capturedSessionId), ws);
+        setupSessionTimeouts(
+          capturedSessionId,
+          activeSessions.get(capturedSessionId),
+          ws,
+        );
         transitionSessionState(capturedSessionId, SessionStatus.ACTIVE);
 
         // Set session ID on writer
-        if (ws.setSessionId && typeof ws.setSessionId === 'function') {
+        if (ws.setSessionId && typeof ws.setSessionId === "function") {
           ws.setSessionId(capturedSessionId);
         }
 
@@ -808,22 +926,31 @@ async function queryClaudeSDK(command, options = {}, ws) {
         if (!effectiveSessionId && !sessionCreatedSent) {
           sessionCreatedSent = true;
           ws.send({
-            type: 'session-created',
-            sessionId: capturedSessionId
+            type: "session-created",
+            sessionId: capturedSessionId,
           });
         } else {
-          console.log('Not sending session-created. effectiveSessionId:', effectiveSessionId, 'sessionCreatedSent:', sessionCreatedSent);
+          console.log(
+            "Not sending session-created. effectiveSessionId:",
+            effectiveSessionId,
+            "sessionCreatedSent:",
+            sessionCreatedSent,
+          );
         }
       } else {
-        console.log('No session_id in message or already captured. message.session_id:', message.session_id, 'capturedSessionId:', capturedSessionId);
+        console.log(
+          "No session_id in message or already captured. message.session_id:",
+          message.session_id,
+          "capturedSessionId:",
+          capturedSessionId,
+        );
       }
 
       // Transform and send message to WebSocket
       const transformedMessage = transformMessage(message);
       ws.send({
-        type: 'claude-response',
+        type: "claude-response",
         data: transformedMessage,
-        sessionId: capturedSessionId
       });
 
       // Reset inactivity timer on each SDK message
@@ -832,14 +959,13 @@ async function queryClaudeSDK(command, options = {}, ws) {
       }
 
       // Extract and send token budget updates from result messages
-      if (message.type === 'result') {
+      if (message.type === "result") {
         const tokenBudget = extractTokenBudget(message);
         if (tokenBudget) {
-          console.log('Token budget from modelUsage:', tokenBudget);
+          console.log("Token budget from modelUsage:", tokenBudget);
           ws.send({
-            type: 'token-budget',
+            type: "token-budget",
             data: tokenBudget,
-            sessionId: capturedSessionId
           });
         }
       }
@@ -852,17 +978,16 @@ async function queryClaudeSDK(command, options = {}, ws) {
     }
 
     // Send completion event
-    console.log('Streaming complete, sending claude-complete event');
+    console.log("Streaming complete, sending claude-complete event");
     ws.send({
-      type: 'claude-complete',
+      type: "claude-complete",
       sessionId: capturedSessionId,
       exitCode: 0,
-      isNewSession: !effectiveSessionId && !!command
+      isNewSession: !effectiveSessionId && !!command,
     });
-    console.log('claude-complete event sent');
-
+    console.log("claude-complete event sent");
   } catch (error) {
-    console.error('SDK query error:', error);
+    console.error("SDK query error:", error);
 
     // Clean up session on error
     if (capturedSessionId) {
@@ -872,11 +997,8 @@ async function queryClaudeSDK(command, options = {}, ws) {
 
     // Send error to WebSocket with enhanced info for mobile debugging
     ws.send({
-      type: 'claude-error',
-      error: error.message || 'An unknown error occurred',
-      sessionId: capturedSessionId,
-      timestamp: new Date().toISOString(),
-      category: categorizeError(error)
+      type: "claude-error",
+      error: error.message,
     });
 
     throw error;
@@ -903,7 +1025,7 @@ async function abortClaudeSDKSession(sessionId) {
     await session.instance.interrupt();
 
     // Update session status
-    session.status = 'aborted';
+    session.status = "aborted";
 
     // Clean up temporary image files
     await cleanupTempFiles(session.tempImagePaths, session.tempDir);
@@ -925,7 +1047,7 @@ async function abortClaudeSDKSession(sessionId) {
  */
 function isClaudeSDKSessionActive(sessionId) {
   const session = getSession(sessionId);
-  return session && session.status === 'active';
+  return session && session.status === "active";
 }
 
 /**
@@ -942,5 +1064,5 @@ export {
   abortClaudeSDKSession,
   isClaudeSDKSessionActive,
   getActiveClaudeSDKSessions,
-  resolveToolApproval
+  resolveToolApproval,
 };

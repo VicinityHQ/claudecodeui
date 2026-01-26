@@ -115,20 +115,20 @@ async function spawnCursor(command, options = {}, ws) {
                 ws.send({
                   type: 'cursor-system',
                   data: response,
-                  sessionId: capturedSessionId
+                  sessionId: capturedSessionId || sessionId || null
                 });
               }
               break;
-              
+
             case 'user':
               // Forward user message
               ws.send({
                 type: 'cursor-user',
                 data: response,
-                sessionId: capturedSessionId
+                sessionId: capturedSessionId || sessionId || null
               });
               break;
-              
+
             case 'assistant':
               // Accumulate assistant message chunks
               if (response.message && response.message.content && response.message.content.length > 0) {
@@ -145,11 +145,11 @@ async function spawnCursor(command, options = {}, ws) {
                       text: textContent
                     }
                   },
-                  sessionId: capturedSessionId
+                  sessionId: capturedSessionId || sessionId || null
                 });
               }
               break;
-              
+
             case 'result':
               // Session complete
               console.log('Cursor session result:', response);
@@ -161,10 +161,10 @@ async function spawnCursor(command, options = {}, ws) {
                   data: {
                     type: 'content_block_stop'
                   },
-                  sessionId: capturedSessionId
+                  sessionId: capturedSessionId || sessionId || null
                 });
               }
-              
+
               // Send completion event
               ws.send({
                 type: 'cursor-result',
@@ -179,7 +179,7 @@ async function spawnCursor(command, options = {}, ws) {
               ws.send({
                 type: 'cursor-response',
                 data: response,
-                sessionId: capturedSessionId
+                sessionId: capturedSessionId || sessionId || null
               });
           }
         } catch (parseError) {
@@ -188,22 +188,22 @@ async function spawnCursor(command, options = {}, ws) {
           ws.send({
             type: 'cursor-output',
             data: line,
-            sessionId: capturedSessionId
+            sessionId: capturedSessionId || sessionId || null
           });
         }
       }
     });
-    
+
     // Handle stderr
     cursorProcess.stderr.on('data', (data) => {
       console.error('Cursor CLI stderr:', data.toString());
       ws.send({
         type: 'cursor-error',
         error: data.toString(),
-        sessionId: capturedSessionId
+        sessionId: capturedSessionId || sessionId || null
       });
     });
-    
+
     // Handle process completion
     cursorProcess.on('close', async (code) => {
       console.log(`Cursor CLI process exited with code ${code}`);
@@ -237,7 +237,7 @@ async function spawnCursor(command, options = {}, ws) {
       ws.send({
         type: 'cursor-error',
         error: error.message,
-        sessionId: finalSessionId
+        sessionId: capturedSessionId || sessionId || null
       });
 
       reject(error);
