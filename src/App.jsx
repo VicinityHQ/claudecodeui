@@ -73,6 +73,10 @@ function AppContent() {
   // until the conversation completes or is aborted.
   const [activeSessions, setActiveSessions] = useState(new Set()); // Track sessions with active conversations
 
+  // Pending Session ID: Track session ID we're navigating to during new session creation
+  // This prevents clearing chat state while waiting for the session to appear in projects
+  const pendingSessionIdRef = useRef(null);
+
   // Processing Sessions: Track which sessions are currently thinking/processing
   // This allows us to restore the "Thinking..." banner when switching back to a processing session
   const [processingSessions, setProcessingSessions] = useState(new Set());
@@ -221,11 +225,13 @@ function AppContent() {
 
         // Session Protection Logic: Allow additions but prevent changes during active conversations
         // This allows new sessions/projects to appear in sidebar while protecting active chat messages
-        // We check for two types of active sessions:
+        // We check for three types of active sessions:
         // 1. Existing sessions: selectedSession.id exists in activeSessions
         // 2. New sessions: temporary "new-session-*" identifiers in activeSessions (before real session ID is received)
+        // 3. Pending sessions: sessions we're navigating to (pendingSessionIdRef is set)
         const hasActiveSession = (selectedSession && activeSessions.has(selectedSession.id)) ||
-                                 (activeSessions.size > 0 && Array.from(activeSessions).some(id => id.startsWith('new-session-')));
+                                 (activeSessions.size > 0 && Array.from(activeSessions).some(id => id.startsWith('new-session-'))) ||
+                                 (pendingSessionIdRef.current !== null);
         
         if (hasActiveSession) {
           // Allow updates but be selective: permit additions, prevent changes to existing items
@@ -263,7 +269,11 @@ function AppContent() {
               ];
               const updatedSelectedSession = allSessions.find(s => s.id === selectedSession.id);
               if (!updatedSelectedSession) {
-                setSelectedSession(null);
+                // Don't clear selectedSession if we're waiting for a pending session
+                // This prevents clearing chat state during the transition period
+                if (!pendingSessionIdRef.current) {
+                  setSelectedSession(null);
+                }
               }
             }
           }
@@ -353,6 +363,14 @@ function AppContent() {
   // Handle URL-based session loading
   useEffect(() => {
     if (sessionId && projects.length > 0) {
+      // If we already have the correct session selected, clear pending ref and exit
+      if (selectedSession && selectedSession.id === sessionId) {
+        if (pendingSessionIdRef.current === sessionId) {
+          pendingSessionIdRef.current = null;
+        }
+        return;
+      }
+
       // Only switch tabs on initial load, not on every project update
       const shouldSwitchTab = !selectedSession || selectedSession.id !== sessionId;
       // Find the session across all projects
@@ -361,6 +379,10 @@ function AppContent() {
         if (session) {
           setSelectedProject(project);
           setSelectedSession({ ...session, __provider: 'claude' });
+          // Clear pending session ref since we found it
+          if (pendingSessionIdRef.current === sessionId) {
+            pendingSessionIdRef.current = null;
+          }
           // Only switch to chat tab if we're loading a different session
           if (shouldSwitchTab) {
             setActiveTab('chat');
@@ -372,16 +394,51 @@ function AppContent() {
         if (cSession) {
           setSelectedProject(project);
           setSelectedSession({ ...cSession, __provider: 'cursor' });
+          // Clear pending session ref since we found it
+          if (pendingSessionIdRef.current === sessionId) {
+            pendingSessionIdRef.current = null;
+          }
           if (shouldSwitchTab) {
             setActiveTab('chat');
           }
           return;
         }
       }
-      
-      // If session not found, it might be a newly created session
-      // Just navigate to it and it will be found when the sidebar refreshes
-      // Don't redirect to home, let the session load naturally
+
+      // Session not found in loaded sessions - fetch sessions for each project to find it
+      // This handles newly created sessions that haven't been loaded yet (lazy loading)
+      const fetchAndFindSession = async () => {
+        for (const project of projects) {
+          try {
+            const response = await authenticatedFetch(`/api/projects/${encodeURIComponent(project.name)}/sessions?limit=50`);
+            if (response.ok) {
+              const data = await response.json();
+              const session = data.sessions?.find(s => s.id === sessionId);
+              if (session) {
+                // Update the project with loaded sessions
+                const updatedProject = { ...project, sessions: data.sessions, sessionMeta: { hasMore: data.hasMore, total: data.total } };
+                setSelectedProject(updatedProject);
+                setSelectedSession({ ...session, __provider: 'claude' });
+                // DO NOT clear pendingSessionIdRef here - wait for the LOAD_MESSAGES useEffect to
+                // verify that selectedSession has the correct value before clearing
+                // The ref will be cleared in the URL_SESSION useEffect on the next render when
+                // selectedSession.id matches sessionId
+                if (shouldSwitchTab) {
+                  setActiveTab('chat');
+                }
+                return;
+              }
+            }
+          } catch (error) {
+            console.error(`Error fetching sessions for project ${project.name}:`, error);
+          }
+        }
+      };
+
+      // Only fetch if we have a pending session (new session being created)
+      if (pendingSessionIdRef.current) {
+        fetchAndFindSession();
+      }
     }
   }, [sessionId, projects, navigate]);
 
@@ -564,6 +621,8 @@ function AppContent() {
   // This maintains protection continuity during the transition from temporary to real session
   const replaceTemporarySession = useCallback((realSessionId) => {
     if (realSessionId) {
+      // Track the pending session ID to prevent clearing chat during transition
+      pendingSessionIdRef.current = realSessionId;
       setActiveSessions(prev => {
         const newSet = new Set();
         // Keep all non-temporary sessions and add the real session ID

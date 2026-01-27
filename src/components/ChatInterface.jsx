@@ -1877,6 +1877,9 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
   const [totalMessages, setTotalMessages] = useState(0);
   const MESSAGES_PER_PAGE = 20;
   const [isSystemSessionChange, setIsSystemSessionChange] = useState(false);
+  // Track the session ID we're navigating to - prevents clearing messages during session transitions
+  // This ref persists across renders and ensures we don't clear messages until the expected session loads
+  const pendingSystemSessionIdRef = useRef(null);
   const [permissionMode, setPermissionMode] = useState('default');
   // In-memory queue of tool permission prompts for the current UI view.
   // These are not persisted and do not survive a page refresh; introduced so
@@ -3020,7 +3023,12 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
         const sessionChanged = currentSessionId !== null && currentSessionId !== selectedSession.id;
 
         if (sessionChanged) {
-          if (!isSystemSessionChange) {
+          // Don't clear messages if:
+          // 1. This is a system-initiated session change (isSystemSessionChange is true), OR
+          // 2. We're waiting for a specific session to load (pendingSystemSessionIdRef matches)
+          const isWaitingForSession = pendingSystemSessionIdRef.current &&
+                                       selectedSession.id === pendingSystemSessionIdRef.current;
+          if (!isSystemSessionChange && !isWaitingForSession) {
             // Clear any streaming leftovers from the previous session
             resetStreamingState();
             pendingViewSessionRef.current = null;
@@ -3071,14 +3079,20 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
           
           // Only load messages from SQLite if this is NOT a system-initiated session change
           // For system-initiated changes, preserve existing messages
-          if (!isSystemSessionChange) {
+          const cursorIsWaitingForSession = pendingSystemSessionIdRef.current &&
+                                            selectedSession.id === pendingSystemSessionIdRef.current;
+          if (!isSystemSessionChange && !cursorIsWaitingForSession) {
             // Load historical messages for Cursor session from SQLite
             const projectPath = selectedProject.fullPath || selectedProject.path;
             const converted = await loadCursorSessionMessages(projectPath, selectedSession.id);
             setSessionMessages([]);
             setChatMessages(converted);
           } else {
-            // Reset the flag after handling system session change
+            // Reset the flags after handling system session change
+            // Only reset if the expected session has loaded
+            if (cursorIsWaitingForSession) {
+              pendingSystemSessionIdRef.current = null;
+            }
             setIsSystemSessionChange(false);
           }
         } else {
@@ -3087,19 +3101,27 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
           
           // Only load messages from API if this is a user-initiated session change
           // For system-initiated changes, preserve existing messages and rely on WebSocket
-          if (!isSystemSessionChange) {
+          const claudeIsWaitingForSession = pendingSystemSessionIdRef.current &&
+                                            selectedSession.id === pendingSystemSessionIdRef.current;
+          if (!isSystemSessionChange && !claudeIsWaitingForSession) {
             const messages = await loadSessionMessages(selectedProject.name, selectedSession.id, false, selectedSession.__provider || 'claude');
             setSessionMessages(messages);
             // convertedMessages will be automatically updated via useMemo
             // Scroll will be handled by the main scroll useEffect after messages are rendered
           } else {
-            // Reset the flag after handling system session change
+            // Reset the flags after handling system session change
+            // Only reset if the expected session has loaded
+            if (claudeIsWaitingForSession) {
+              pendingSystemSessionIdRef.current = null;
+            }
             setIsSystemSessionChange(false);
           }
         }
       } else {
-        // New session view (no selected session) - always reset UI state
-        if (!isSystemSessionChange) {
+        // New session view (no selected session) - only reset UI state if not waiting for a session
+        // During session transitions, selectedSession may be null temporarily before the correct session loads
+        const isWaitingForPendingSession = pendingSystemSessionIdRef.current !== null;
+        if (!isSystemSessionChange && !isWaitingForPendingSession) {
           resetStreamingState();
           pendingViewSessionRef.current = null;
           setChatMessages([]);
@@ -3308,10 +3330,11 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
             if (pendingViewSessionRef.current && !pendingViewSessionRef.current.sessionId) {
               pendingViewSessionRef.current.sessionId = latestMessage.sessionId;
             }
-            
+
             // Mark as system change to prevent clearing messages when session ID updates
             setIsSystemSessionChange(true);
-            
+            pendingSystemSessionIdRef.current = latestMessage.sessionId;
+
             // Session Protection: Replace temporary "new-session-*" identifier with real session ID
             // This maintains protection continuity - no gap between temp ID and real ID
             // The temporary session is removed and real session is marked as active
@@ -3415,7 +3438,8 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
             // Mark this as a system-initiated session change to preserve messages
             // This works exactly like new session init - messages stay visible during navigation
             setIsSystemSessionChange(true);
-            
+            pendingSystemSessionIdRef.current = latestMessage.data.session_id;
+
             // Switch to the new session using React Router navigation
             // This triggers the session loading logic in App.jsx without a page reload
             if (onNavigateToSession) {
@@ -3423,36 +3447,31 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
             }
             return; // Don't process the message further, let the navigation handle it
           }
-          
+
           // Handle system/init for new sessions (when currentSessionId is null)
-          if (latestMessage.data.type === 'system' && 
-              latestMessage.data.subtype === 'init' && 
-              latestMessage.data.session_id && 
+          if (latestMessage.data.type === 'system' &&
+              latestMessage.data.subtype === 'init' &&
+              latestMessage.data.session_id &&
               !currentSessionId &&
               isSystemInitForView) {
-            
-            console.log('🔄 New session init detected:', {
-              newSession: latestMessage.data.session_id
-            });
-            
             // Mark this as a system-initiated session change to preserve messages
             setIsSystemSessionChange(true);
-            
+            pendingSystemSessionIdRef.current = latestMessage.data.session_id;
+
             // Switch to the new session
             if (onNavigateToSession) {
               onNavigateToSession(latestMessage.data.session_id);
             }
             return; // Don't process the message further, let the navigation handle it
           }
-          
+
           // For system/init messages that match current session, just ignore them
-          if (latestMessage.data.type === 'system' && 
-              latestMessage.data.subtype === 'init' && 
-              latestMessage.data.session_id && 
-              currentSessionId && 
+          if (latestMessage.data.type === 'system' &&
+              latestMessage.data.subtype === 'init' &&
+              latestMessage.data.session_id &&
+              currentSessionId &&
               latestMessage.data.session_id === currentSessionId &&
               isSystemInitForView) {
-            console.log('🔄 System init message for current session, ignoring');
             return; // Don't process the message further
           }
           
@@ -3639,6 +3658,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
               if (currentSessionId && cdata.session_id !== currentSessionId) {
                 console.log('🔄 Cursor session switch detected:', { originalSession: currentSessionId, newSession: cdata.session_id });
                 setIsSystemSessionChange(true);
+                pendingSystemSessionIdRef.current = cdata.session_id;
                 if (onNavigateToSession) {
                   onNavigateToSession(cdata.session_id);
                 }
@@ -3648,6 +3668,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
               if (!currentSessionId) {
                 console.log('🔄 Cursor new session init detected:', { newSession: cdata.session_id });
                 setIsSystemSessionChange(true);
+                pendingSystemSessionIdRef.current = cdata.session_id;
                 if (onNavigateToSession) {
                   onNavigateToSession(cdata.session_id);
                 }
@@ -3952,6 +3973,7 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
           if (codexPendingSessionId && !currentSessionId) {
             setCurrentSessionId(codexActualSessionId);
             setIsSystemSessionChange(true);
+            pendingSystemSessionIdRef.current = codexActualSessionId;
             if (onNavigateToSession) {
               onNavigateToSession(codexActualSessionId);
             }
@@ -4410,6 +4432,12 @@ function ChatInterface({ selectedProject, selectedSession, ws, sendMessage, mess
     if (isNewSession) {
       setChatMessages([]);
       setSessionMessages([]);
+
+      // CRITICAL: Set pending session marker BEFORE WebSocket events can arrive
+      // This prevents the LOAD_MESSAGES useEffect from clearing messages before
+      // the session-created event sets the real session ID
+      setIsSystemSessionChange(true);
+      pendingSystemSessionIdRef.current = 'pending-new-session';
     }
 
     // Clear error state when starting a new message
