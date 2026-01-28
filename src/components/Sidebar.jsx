@@ -561,10 +561,11 @@ function Sidebar({
   const handleProjectSelect = (project) => {
     // Call the original project select handler
     onProjectSelect(project);
-    
+
     // Update TaskMaster context with the selected project
     setCurrentProject(project);
   };
+
 
   return (
     <>
@@ -1311,11 +1312,18 @@ function Sidebar({
                                   isActive ? "border-green-500/30 bg-green-50/5 dark:bg-green-900/5" : "border-border/30"
                                 )}
                                 onClick={() => {
-                                  handleProjectSelect(project);
+                                  // Only select project if clicking session from different project
+                                  // This avoids calling handleProjectSelect which closes sidebar on mobile
+                                  if (selectedProject?.name !== project.name) {
+                                    handleProjectSelect(project);
+                                  }
                                   handleSessionClick(session, project.name);
                                 }}
                                 onTouchEnd={handleTouchClick(() => {
-                                  handleProjectSelect(project);
+                                  // Only select project if clicking session from different project
+                                  if (selectedProject?.name !== project.name) {
+                                    handleProjectSelect(project);
+                                  }
                                   handleSessionClick(session, project.name);
                                 })}
                               >
