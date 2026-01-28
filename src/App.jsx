@@ -987,7 +987,10 @@ function AppContent() {
           onSessionNotProcessing={markSessionAsNotProcessing}
           processingSessions={processingSessions}
           onReplaceTemporarySession={replaceTemporarySession}
-          onNavigateToSession={(sessionId) => navigate(`/session/${sessionId}`)}
+          onNavigateToSession={(sessionId) => {
+            pendingSessionIdRef.current = sessionId;
+            navigate(`/session/${sessionId}`);
+          }}
           onShowSettings={() => setShowSettings(true)}
           autoExpandTools={autoExpandTools}
           showRawParameters={showRawParameters}
