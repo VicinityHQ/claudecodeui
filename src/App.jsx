@@ -440,7 +440,7 @@ function AppContent() {
         fetchAndFindSession();
       }
     }
-  }, [sessionId, projects, navigate]);
+  }, [sessionId, projects, navigate, selectedSession]);
 
   const handleProjectSelect = (project) => {
     setSelectedProject(project);
