@@ -478,6 +478,7 @@ function AppContent() {
         setSidebarOpen(false);
       }
     }
+    pendingSessionIdRef.current = session.id;
     navigate(`/session/${session.id}`);
   };
 
