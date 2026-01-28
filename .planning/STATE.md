@@ -82,6 +82,8 @@ Recent decisions affecting current work:
 | ARIA polite for connection status | 06-01 | Non-blocking status updates don't interrupt user |
 | Connection badge only shows when disconnected | 06-01 | Avoid UI clutter during normal operation |
 | Yellow color for reconnection indicator | 06-01 | Reconnection is expected/recoverable, not a failure |
+| Add selectedSession to URL_SESSION useEffect deps | quick-002 | Prevents stale closures in session guard conditions |
+| Set pendingSessionIdRef in all navigation paths | quick-002 | Protects selection during project list updates |
 
 ### Known Issues for v1.1
 
@@ -105,10 +107,11 @@ None yet.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 001 | Fix WebSocket message queuing to prevent silent drops | 2025-01-25 | 61a8f18 | [001-investigate-ui-backend-messaging](./quick/001-investigate-ui-backend-messaging/) |
+| 002 | Fix session selection and new session creation | 2026-01-28 | bcbaa57 | [002-fix-session-selection-and-creation](./quick/002-fix-session-selection-and-creation/) |
 
 ## Session Continuity
 
-Last session: 2026-01-26T10:26:35Z
-Stopped at: Completed 06-01-PLAN.md (Milestone v1.1 Session Reliability complete)
+Last session: 2026-01-28T20:02:34Z
+Stopped at: Completed quick task 002 (session selection and creation fixes)
 Resume file: —
-Next: Ready for user verification and integration testing
+Next: Ready for user verification of session selection/creation flows
